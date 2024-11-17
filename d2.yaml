@@ -1,0 +1,1097 @@
+# quay_endpoint: registry-quay.apps.fcakgt01.gestione.enet
+quay_organization: devops
+quay_organization_role_name: devops
+repositories:
+- mirror: false
+  name: sample-java-image
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: git
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: mvn
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: hugo
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: github-runner-ocp
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: sample-dotnet-image
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: github-runner-oc
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: sample-container-app
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: sample-js-image
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: dotnet-60
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: axway-helper
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: dump-snyk-users
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: openapi-cli
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: nodejs-20
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: git1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git2
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git3
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git4
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git5
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git6
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git7
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git8
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git9
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git0
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git11
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git12
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git13
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git14
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git15
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git16
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: git17
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git18
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git19
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git20
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git21
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git31
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git41
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git51
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git61
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git71
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git81
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git91
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git101
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git121
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git131
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git141
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git151
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git161
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+
+
+- mirror: false
+  name: sample-java-image1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: git1111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: mvn1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: hugo1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: github-runner-ocp1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: sample-dotnet-image1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: github-runner-oc1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: sample-container-app1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: sample-js-image1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: dotnet-601
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: axway-helper1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: dump-snyk-users1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: openapi-cli1
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: nodejs-201
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: git11111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git21111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git31111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git431111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git531111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git631111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git731111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git831111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git931111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git031111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1231111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1331111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1431111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1531111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1631111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin 
+- mirror: false
+  name: git1731111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1831111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git1931111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git2031111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git2131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git3131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git4131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git5131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git6131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git7131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git8131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git9131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git10131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git11131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git12131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git13131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git14131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git15131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+- mirror: false
+  name: git16131111
+  permissions:
+    robots:
+    - name: ocp_build
+      role: write
+    teams:
+    - name: cbmdevelopers
+      role: write
+    - name: owners
+      role: admin
+robots:
+- desc: Usato dalle pipeline di build di quest'organization per caricare le immagini
+    generate
+  name: ocp_build
+teams:
+- description: ''
+  group_dn: CN=quayadmins,OU=quay.io,OU=k8sFunctions,OU=Functions,OU=Accounts
+  name: owners
+  role: admin
+- description: ''
+  group_dn: CN=cbmdeveloppers,OU=quay.io,OU=k8sFunctions,OU=Functions,OU=Accounts
+  name: cbmdevelopers
+  role: creator
