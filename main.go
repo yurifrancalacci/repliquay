@@ -23,8 +23,8 @@ type Quays struct {
 type HostToken struct {
 	Host string `yaml:"host"`
 	Token string `yaml:"token"`
-	// MaxConnection int `yaml:"max_connections"`
-	// QueueLength int
+	MaxConnection int `yaml:"max_connections"`
+	QueueLength int
    }
 
 type Organization struct {
@@ -67,7 +67,7 @@ type PermStruct struct {
 
 // vars
 var(
-	parallel int
+	// parallel int
 	insecure bool
 	ldapSync bool
 	dryRun bool
@@ -130,12 +130,12 @@ func checkLogin(quays Quays) (login_ok bool) {
 	var wg sync.WaitGroup
 	fmt.Println("check login")
 
-	queueLength := 0
+	// queueLength := 0
 	for _, v := range quays.HostToken {
-		queueLength++
+		v.QueueLength++
 
-		for queueLength > parallel {
-			fmt.Println("CheckLoginsleep 1", queueLength)
+		for v.QueueLength > v.MaxConnection {
+			fmt.Println("CheckLoginsleep 1", v.QueueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -143,7 +143,7 @@ func checkLogin(quays Quays) (login_ok bool) {
 			defer wg.Done()
 			*counter--
 			apiCall(v.Host, "/api/v1/user/logs", "GET", v.Token, "", "checking Logins")
-		}(&queueLength)
+		}(&v.QueueLength)
 	}
 	wg.Wait()
 	login_ok = true
@@ -164,17 +164,17 @@ func createOrg(quayHost string, orgList Organization, token string) (status bool
 	return
 }
 
-func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token string) (status bool) {
+func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
-	queueLength := 0
+	// queueLength := 0
 	fmt.Printf("Creating %d repos\n", len(repoConfig))
-	fmt.Printf("Parallel value %d\n", parallel)
+	fmt.Printf("max_conn value %d\n", max_conn)
 
 	for i, v := range repoConfig {
 		fmt.Printf("Creating Repo %d: %s\n", i, v.Name)
-		queueLength++
-		for queueLength > parallel {
-			fmt.Println("create repo sleep 1", queueLength)
+		*queueLength++
+		for *queueLength > max_conn {
+			fmt.Println("create repo sleep 1", *queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -189,24 +189,24 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 				`{"repository":"`+ v.Name +`","visibility":"private","namespace":"`+ orgName +`","description":"repository description"}`,
 				"create repository "+ v.Name,
 			)
-		}(&queueLength)
+		}(queueLength)
 	}
 	wg.Wait()
 	status = true
 	return
 }
 
-func createRepoPermission(quayHost string, orgName string, permList []PermStruct, token string) (status bool) {
+func createRepoPermission(quayHost string, orgName string, permList []PermStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
-	queueLength := 0
+	// queueLength := 0
 	fmt.Printf("Creating %d permissions\n", len(permList))
 
 	for _, v := range permList {
-		queueLength++
+		*queueLength++
 
-		for queueLength > parallel {
-			fmt.Println("Repo permission sleep 5 seconds...", queueLength, quayHost)
-			time.Sleep(5000 * time.Millisecond)
+		for *queueLength > max_conn {
+			fmt.Println("Repo permission sleep 5 seconds...", *queueLength, quayHost)
+			// time.Sleep(5000 * time.Millisecond)
 			// 
 		}
 		wg.Add(1)
@@ -232,7 +232,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 					"create repo "+v.Name+" permission for teams "+ v.Name + " and role "+ v.Role,
 				)
 			}
-		}(&queueLength)
+		}(queueLength)
 	}
 	wg.Wait()
 	status = true
@@ -258,16 +258,16 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string) (permL
 	return
 }
 
-func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, teamList []TeamStruct, token string)(status bool){
+func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, teamList []TeamStruct, token string, queueLength *int, max_conn int)(status bool){
 	var wg sync.WaitGroup
-	queueLength := 0
+	// queueLength := 0
 // robot
 	fmt.Println("creating ", len(robotList), "robots")
 	for _, v := range robotList {
 		fmt.Println("Creating robot", v)
-		queueLength++
-		for queueLength > parallel {
-			fmt.Println("Robot sleep 1", queueLength)
+		*queueLength++
+		for *queueLength > max_conn {
+			fmt.Println("Robot sleep 1", *queueLength, quayHost)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -275,15 +275,15 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 			defer wg.Done()
 			*counter--
 			apiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+ v.Name, "PUT", token, `{"description":"`+ v.Description +`"}`, "create robot "+ v.Name)
-		}(&queueLength) 
+		}(queueLength) 
 	}
 // teams
 	fmt.Println("creating ", len(teamList), "teams")
 	for _, v := range teamList {
 		fmt.Println("Creating team", v)
-		queueLength++
-		for queueLength > parallel {
-			fmt.Println("Team sleep 1", queueLength)
+		*queueLength++
+		for *queueLength > max_conn {
+			fmt.Println("Team sleep 1", *queueLength, quayHost)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -294,7 +294,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 			if ldapSync {
 				apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name)
 			}
-		}(&queueLength) 
+		}(queueLength) 
 	}
 	wg.Wait()
 	status = true
@@ -324,7 +324,7 @@ func main() {
 		}
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
-	flag.IntVar(&parallel, "parallel", 50, "max parallel requests")
+	// flag.IntVar(&parallel, "parallel", 50, "max parallel requests")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
 	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
 	flag.BoolVar(&dryRun, "dryrun", false, "enable dry run (default false)")
@@ -334,7 +334,7 @@ func main() {
 	for _, v := range repo {
 			fmt.Printf("- Name: %s\n", v)
 	}
-	fmt.Printf("quayfile %s\n\nparallel %d insecure %t\n", quaysfile, parallel, insecure)
+	fmt.Printf("quayfile %s\n\ninsecure %t\n", quaysfile, insecure)
 
 	yamlData, err := os.ReadFile(quaysfile)
 	
@@ -375,6 +375,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	for _, v := range quays.HostToken {
+		v.QueueLength = 0
 		for _, o := range parsedOrg {
 			wg.Add(1)
 			go func() {
@@ -382,11 +383,11 @@ func main() {
 				fmt.Printf("creating organization - Host: %s \n\t- %s\n", v.Host, o.Name)
 				createOrg(v.Host, o, v.Token)
 				fmt.Printf("creating robots and teams for organization %s - Host: %s\n", o.Name, v.Host)
-				createRobotTeam(v.Host, o.Name, o.RobotList, o.TeamsList, v.Token)
+				createRobotTeam(v.Host, o.Name, o.RobotList, o.TeamsList, v.Token, &v.QueueLength, v.MaxConnection)
 				fmt.Printf("creating repositories for organization %s - Host: %s\n", o.Name, v.Host)
-				createRepo(v.Host, o.Name, o.RepoList, v.Token)
+				createRepo(v.Host, o.Name, o.RepoList, v.Token, &v.QueueLength, v.MaxConnection)
 				permList = slices.Concat(permList, createPermissionList(o.RepoList, "robots"), createPermissionList(o.RepoList, "teams"))
-				createRepoPermission(v.Host, o.Name, permList, v.Token)
+				createRepoPermission(v.Host, o.Name, permList, v.Token, &v.QueueLength, v.MaxConnection)
 				fmt.Printf("Repliquay: quay %s organization %s replicated in %s\n", v.Host, o.Name, time.Since(t1))
 			}()
 		}

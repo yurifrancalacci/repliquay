@@ -1,5 +1,7 @@
 quays:
   - host: quay1.example.com
     token: ICkOL2YxiAPv90HLUshqv30JGZVJfwX9gYC6hIfM
+    max_connections: 20
   - host: quay2.example.com
     token: lB6FyIc8KvsETD7vAs64FRIDOPzZEdrQ3dd0TbSz
+    max_connections: 100
