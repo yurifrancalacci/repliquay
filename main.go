@@ -71,6 +71,7 @@ var(
 	ldapSync bool
 	dryRun bool
 	sleepPeriod int
+	debug bool
 )
 // func
 func apiCall(host string, url string, method string, token string, bodyData string, action string) (httpCode int) {
@@ -116,7 +117,9 @@ func apiCall(host string, url string, method string, token string, bodyData stri
 		} else if res.StatusCode > 299 {
 			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %surl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
 		} else {
-			log.Printf("%s Action %s completed\n", host, action)
+			if debug {
+				log.Printf("%s Action %s completed\n", host, action)
+			}
 		}
 		if err != nil {
 			log.Fatal(err)
@@ -135,7 +138,9 @@ func checkLogin(quays Quays) (login_ok bool) {
 		v.QueueLength++
 
 		for v.QueueLength > v.MaxConnection  && sleepPeriod != 0 {
-			fmt.Printf("%s: Check login sleep %d, queue length %d\n",v.Host, time.Duration(sleepPeriod), v.QueueLength)
+			if debug {
+				fmt.Printf("%s: Check login sleep %d, queue length %d\n",v.Host, time.Duration(sleepPeriod), v.QueueLength)
+			}
 			time.Sleep(time.Duration(sleepPeriod) * time.Second)
 		}
 		wg.Add(1)
@@ -151,7 +156,9 @@ func checkLogin(quays Quays) (login_ok bool) {
 }
 
 func createOrg(quayHost string, orgList Organization, token string) (status bool) {
-	fmt.Println("Creating Org...", orgList.Name)
+	if debug {
+		fmt.Println("Creating Org...", orgList.Name)
+	}
 	apiCall(
 		quayHost,
 		"/api/v1/organization/",
@@ -167,14 +174,18 @@ func createOrg(quayHost string, orgList Organization, token string) (status bool
 func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
 	// queueLength := 0
-	fmt.Printf("Creating %d repos\n", len(repoConfig))
-	fmt.Printf("max_conn value %d\n", max_conn)
-
+	if debug {
+		fmt.Printf("Creating %d repos\n", len(repoConfig))
+	}
 	for i, v := range repoConfig {
-		fmt.Printf("Creating Repo %d: %s\n", i, v.Name)
+		if debug {
+			fmt.Printf("Creating Repo %d: %s\n", i, v.Name)
+		}
 		*queueLength++
 		for *queueLength > max_conn  && sleepPeriod != 0 {
-			fmt.Printf("%s: create repo sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			if debug {
+				fmt.Printf("%s: create repo sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			}
 			time.Sleep(time.Duration(sleepPeriod) * time.Second)
 		}
 		wg.Add(1)
@@ -199,13 +210,17 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 func createRepoPermission(quayHost string, orgName string, permList []PermStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
 	// queueLength := 0
-	fmt.Printf("Creating %d permissions\n", len(permList))
+	if debug {
+		fmt.Printf("Creating %d permissions\n", len(permList))
+	}
 
 	for _, v := range permList {
 		*queueLength++
 
 		for *queueLength > max_conn  && sleepPeriod != 0 {
-			fmt.Printf("%s: Repo permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			if debug {
+				fmt.Printf("%s: Repo permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			}
 			time.Sleep(time.Duration(sleepPeriod) * time.Second)
 		}
 		wg.Add(1)
@@ -239,7 +254,9 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 }
 
 func createPermissionList(repoConfig []RepoStruct, permissionName string) (permList []PermStruct) {
-	fmt.Printf("Mapping Permission for %d repos\n", len(repoConfig))
+	if debug {
+		fmt.Printf("Mapping Permission for %d repos\n", len(repoConfig))
+	}
 
 	for _, v := range repoConfig {
 
@@ -249,7 +266,9 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string) (permL
 		} else {
 			loopList = v.PermissionList.Teams
 		}
-		fmt.Printf("Creating permission for repo: %s kind %s\n", v.Name, permissionName)
+		if debug {
+			fmt.Printf("Mapping permission for repo: %s kind %s\n", v.Name, permissionName)
+		}
 		for _, vv := range loopList {
 			permList = append(permList, PermStruct{ Name: vv.Name, Role: vv.Role, PermissionKind: permissionName, RepoName: v.Name })	
 		}
@@ -261,12 +280,18 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 	var wg sync.WaitGroup
 	// queueLength := 0
 // robot
-	fmt.Println("creating ", len(robotList), "robots")
+	if debug {
+		fmt.Println("creating ", len(robotList), "robots")
+	}
 	for _, v := range robotList {
-		fmt.Println("Creating robot", v)
+		if debug {
+			fmt.Println("Creating robot", v)
+		}
 		*queueLength++
 		for *queueLength > max_conn  && sleepPeriod != 0 {
-			fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			if debug {
+				fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			}
 			time.Sleep(time.Duration(sleepPeriod) * time.Second)
 		}
 		wg.Add(1)
@@ -277,12 +302,18 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		}(queueLength) 
 	}
 // teams
-	fmt.Println("creating ", len(teamList), "teams")
+	if debug {
+		fmt.Println("creating ", len(teamList), "teams")
+	}
 	for _, v := range teamList {
-		fmt.Println("Creating team", v)
+		if debug {
+			fmt.Println("Creating team", v)
+		}
 		*queueLength++
 		for *queueLength > max_conn && sleepPeriod != 0 {
-			fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			if debug {
+				fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
+			}
 			time.Sleep(time.Duration(sleepPeriod) * time.Second)
 		}
 		wg.Add(1)
@@ -324,17 +355,19 @@ func main() {
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
 	flag.IntVar(&sleepPeriod, "sleep", 1, "sleep in seconds when reaching max connection")
+	flag.BoolVar(&debug, "debug", false, "print debug messages (default false)")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
 	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
 	flag.BoolVar(&dryRun, "dryrun", false, "enable dry run (default false)")
 
 	flag.Parse()
-	fmt.Println(len(repo))
-	for _, v := range repo {
-			fmt.Printf("- Name: %s\n", v)
+	if debug {
+		for _, v := range repo {
+				fmt.Printf("- Name: %s\n", v)
+		}
+		fmt.Printf("quayfile %s\n\ninsecure %t\n", quaysfile, insecure)
 	}
-	fmt.Printf("quayfile %s\n\ninsecure %t\n", quaysfile, insecure)
-
+	
 	yamlData, err := os.ReadFile(quaysfile)
 	
 	if err != nil {
@@ -379,7 +412,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				fmt.Printf("creating organization - Host: %s \n\t- %s\n", v.Host, o.Name)
+				fmt.Printf("creating organization - Host: %s\t- %s\n", v.Host, o.Name)
 				createOrg(v.Host, o, v.Token)
 				fmt.Printf("creating robots and teams for organization %s - Host: %s\n", o.Name, v.Host)
 				createRobotTeam(v.Host, o.Name, o.RobotList, o.TeamsList, v.Token, &v.QueueLength, v.MaxConnection)
@@ -387,11 +420,11 @@ func main() {
 				createRepo(v.Host, o.Name, o.RepoList, v.Token, &v.QueueLength, v.MaxConnection)
 				permList = slices.Concat(permList, createPermissionList(o.RepoList, "robots"), createPermissionList(o.RepoList, "teams"))
 				createRepoPermission(v.Host, o.Name, permList, v.Token, &v.QueueLength, v.MaxConnection)
-				fmt.Printf("Repliquay: quay %s organization %s replicated in %s\n", v.Host, o.Name, time.Since(t1))
 			}()
-		}
+			// fmt.Printf("Repliquay: quay %s organization %s replicated in %s\n", v.Host, o.Name, time.Since(t1))
+		}		
 	}
+	fmt.Printf("Repliquay: mission completed in %s\n", time.Since(t1))
 	wg.Wait()
-
 	fmt.Printf("Repliquay: mission completed in %s\n", time.Since(t1))
 }
