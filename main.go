@@ -69,55 +69,60 @@ type PermStruct struct {
 var(
 	parallel int
 	insecure bool
+	ldapSync bool
+	dryRun bool
 )
 // func
 func apiCall(host string, url string, method string, token string, bodyData string, action string) (httpCode int) {
 
 	var enableTLS string
+	httpCode = 0
 
-	client := &http.Client{}
-	req := &http.Request{}
-	if !insecure {
-		enableTLS = "s"
-	}
+	if !dryRun {	
 
-	if bodyData != "" {
-		jsonBody := []byte(bodyData)
-		bodyReader := bytes.NewReader(jsonBody)
-		req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, bodyReader)
-	} else {
-		req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, nil)
-	}
+		client := &http.Client{}
+		req := &http.Request{}
+		if !insecure {
+			enableTLS = "s"
+		}
 
-	if token != "" {
-		req.Header.Add("Authorization", "Bearer " + token)
-		req.Header.Add("Content-Type", "application/json")
-	}
-	
-	res, err := client.Do(req)
-	
-	if err != nil {
-		log.Fatal(err)
-	}
-	res_body, err := io.ReadAll(res.Body)
-	res.Body.Close()
+		if bodyData != "" {
+			jsonBody := []byte(bodyData)
+			bodyReader := bytes.NewReader(jsonBody)
+			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, bodyReader)
+		} else {
+			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, nil)
+		}
 
-	if res.StatusCode == 401 {
-		log.Fatalf("%s Unauthorized Response failed with status code: %d and\nbody: %s\nRequest data %s\nurl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-	} 
+		if token != "" {
+			req.Header.Add("Authorization", "Bearer " + token)
+			req.Header.Add("Content-Type", "application/json")
+		}
 
-	if res.StatusCode > 499 {
-		log.Fatalf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s\nurl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-	} else if res.StatusCode > 299 {
-		log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %surl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-	} else {
-		log.Printf("%s Action %s completed\n", host, action)
+		res, err := client.Do(req)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		res_body, err := io.ReadAll(res.Body)
+		res.Body.Close()
+
+		if res.StatusCode == 401 {
+			log.Fatalf("%s Unauthorized Response failed with status code: %d and\nbody: %s\nRequest data %s\nurl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
+		} 
+
+		if res.StatusCode > 499 {
+			log.Fatalf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s\nurl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
+		} else if res.StatusCode > 299 {
+			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %surl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
+		} else {
+			log.Printf("%s Action %s completed\n", host, action)
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		httpCode = res.StatusCode
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	// fmt.Printf("%s", body)
-	httpCode = res.StatusCode
 	return
 }
 
@@ -130,7 +135,7 @@ func checkLogin(quays Quays) (login_ok bool) {
 		queueLength++
 
 		for queueLength > parallel {
-			fmt.Println("sleep 1")
+			fmt.Println("CheckLoginsleep 1", queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -169,7 +174,7 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 		fmt.Printf("Creating Repo %d: %s\n", i, v.Name)
 		queueLength++
 		for queueLength > parallel {
-			fmt.Println("sleep 1")
+			fmt.Println("create repo sleep 1", queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -200,7 +205,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 		queueLength++
 
 		for queueLength > parallel {
-			fmt.Println("sleep 5 seconds...")
+			fmt.Println("Repo permission sleep 5 seconds...", queueLength, quayHost)
 			time.Sleep(5000 * time.Millisecond)
 			// 
 		}
@@ -262,7 +267,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		fmt.Println("Creating robot", v)
 		queueLength++
 		for queueLength > parallel {
-			fmt.Println("sleep 1")
+			fmt.Println("Robot sleep 1", queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -278,7 +283,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		fmt.Println("Creating team", v)
 		queueLength++
 		for queueLength > parallel {
-			fmt.Println("sleep 1")
+			fmt.Println("Team sleep 1", queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -286,7 +291,9 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 			defer wg.Done()
 			*counter--
 			apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name, "PUT", token, `{"role":"`+ v.Role +`"}`, "create team "+ v.Name)
-			// apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name)
+			if ldapSync {
+				apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name)
+			}
 		}(&queueLength) 
 	}
 	wg.Wait()
@@ -318,7 +325,9 @@ func main() {
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
 	flag.IntVar(&parallel, "parallel", 50, "max parallel requests")
-	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection")
+	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
+	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
+	flag.BoolVar(&dryRun, "dryrun", false, "enable dry run (default false)")
 
 	flag.Parse()
 	fmt.Println(len(repo))
@@ -357,11 +366,11 @@ func main() {
 	// for i, v := range org.RepoList {
 	// 	fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
 	// }
-
-	if ! checkLogin(quays){
-		log.Fatal("Error logging to quay hosts")
+	if ! dryRun {
+		if ! checkLogin(quays){
+			log.Fatal("Error logging to quay hosts")
+		}
 	}
-
 	// os.Exit(0)
 
 	var wg sync.WaitGroup
