@@ -268,7 +268,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		fmt.Println("Creating robot", v)
 		*queueLength++
 		for *queueLength > max_conn  && sleepPeriod != 0 {
-			fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod) * time.Second, *queueLength, quayHost)
+			fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod) * time.Second, *queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
@@ -284,7 +284,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		fmt.Println("Creating team", v)
 		*queueLength++
 		for *queueLength > max_conn && sleepPeriod != 0 {
-			fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod) * time.Second, *queueLength, quayHost)
+			fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod) * time.Second, *queueLength)
 			time.Sleep(1 * time.Second)
 		}
 		wg.Add(1)
