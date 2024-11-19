@@ -141,7 +141,7 @@ func checkLogin(quays Quays) (login_ok bool) {
 			if debug {
 				fmt.Printf("%s: Check login sleep %d, queue length %d\n",v.Host, time.Duration(sleepPeriod), v.QueueLength)
 			}
-			time.Sleep(time.Duration(sleepPeriod) * time.Second)
+			time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
 		}
 		wg.Add(1)
 		go func(counter *int) {
@@ -186,7 +186,7 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 			if debug {
 				fmt.Printf("%s: create repo sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
 			}
-			time.Sleep(time.Duration(sleepPeriod) * time.Second)
+			time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
 		}
 		wg.Add(1)
 		go func(counter *int) {
@@ -221,7 +221,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 			if debug {
 				fmt.Printf("%s: Repo permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
 			}
-			time.Sleep(time.Duration(sleepPeriod) * time.Second)
+			time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
 		}
 		wg.Add(1)
 		go func(counter *int) {
@@ -292,7 +292,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 			if debug {
 				fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
 			}
-			time.Sleep(time.Duration(sleepPeriod) * time.Second)
+			time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
 		}
 		wg.Add(1)
 		go func(counter *int) {
@@ -314,7 +314,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 			if debug {
 				fmt.Printf("%s: Robot permission sleep %d, queue length %d\n",quayHost, time.Duration(sleepPeriod), *queueLength)
 			}
-			time.Sleep(time.Duration(sleepPeriod) * time.Second)
+			time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
 		}
 		wg.Add(1)
 		go func(counter *int) {
@@ -354,7 +354,7 @@ func main() {
 		}
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
-	flag.IntVar(&sleepPeriod, "sleep", 1, "sleep in seconds when reaching max connection")
+	flag.IntVar(&sleepPeriod, "sleep", 1, "sleep length ms when reaching max connection")
 	flag.BoolVar(&debug, "debug", false, "print debug messages (default false)")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
 	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
@@ -404,6 +404,7 @@ func main() {
 		}
 	}
 	// os.Exit(0)
+	fmt.Printf("Repliquay: repliquayting... be patient\n")
 
 	var wg sync.WaitGroup
 	for _, v := range quays.HostToken {
@@ -424,7 +425,6 @@ func main() {
 			// fmt.Printf("Repliquay: quay %s organization %s replicated in %s\n", v.Host, o.Name, time.Since(t1))
 		}		
 	}
-	fmt.Printf("Repliquay: mission completed in %s\n", time.Since(t1))
 	wg.Wait()
 	fmt.Printf("Repliquay: mission completed in %s\n", time.Since(t1))
 }
