@@ -14,6 +14,7 @@ import (
 	// "time"
 	"net/http"
 	"gopkg.in/yaml.v3"
+	"gopkg.in/ini.v1"
 )
 
 type Quays struct {
@@ -330,20 +331,37 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 	status = true
 	return
 }
+func parseIniFile(inifile string, quay string, repolist []string, sleep int, insec bool, ldap bool, dry bool ) (quaysfile string, repo []string, sleepPeriod int, insecure bool, ldapSync bool, dryRun bool){
+	inidata, err := ini.Load(inifile)
+
+	if err != nil {
+		log.Print("Warning: no ini file found, loading default values")
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = quay , repolist, sleep, insec, ldap, dry
+		return
+		
+	}
+	quaysfile = inidata.Section("quays").Key("file").String()
+	repo = inidata.Section("repos").Key("files").Strings(",")
+	sleepPeriod, _ = inidata.Section("params").Key("sleep").Int()
+	debug, _ = inidata.Section("params").Key("debug").Bool()
+	ldapSync, _ = inidata.Section("params").Key("ldapsync").Bool()
+	dryRun, _ = inidata.Section("params").Key("dryrun").Bool()
+	return
+}
 
 func main() {
 	var quays Quays
 	var org Organization
 	var permList []PermStruct
 	var parsedOrg []Organization
-
-	t1 := time.Now()
 	
 	var(
 		quaysfile string
 		repo []string
+		iniFile string
 	)
 
+	t1 := time.Now()
 	flag.Func("repo", "quay repo file name", func(s string) error {
 		_, err := os.Stat(s)
 		if err == nil {
@@ -354,6 +372,7 @@ func main() {
 		}
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
+	flag.StringVar(&iniFile, "ini", "/etc/repliquay.conf" , "repliquay config file (override all opts - default /etc/repliquay.conf)")
 	flag.IntVar(&sleepPeriod, "sleep", 1, "sleep length ms when reaching max connection")
 	flag.BoolVar(&debug, "debug", false, "print debug messages (default false)")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
@@ -361,6 +380,17 @@ func main() {
 	flag.BoolVar(&dryRun, "dryrun", false, "enable dry run (default false)")
 
 	flag.Parse()
+
+	p, _ := os.Executable()
+
+	_, err := os.Stat(p+"/"+iniFile)
+	if err != nil {
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = parseIniFile(iniFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun)
+		// fmt.Println("Parsing ini file ", iniFile, repo)
+	} else {
+		fmt.Println("No config file provided ")
+	}
+
 	if debug {
 		for _, v := range repo {
 				fmt.Printf("- Name: %s\n", v)
@@ -385,19 +415,23 @@ func main() {
 		parsedOrg = append(parsedOrg, org)
 	}
 
-	// for _, ooo := range parsedOrg {
-	// 	for i, v := range ooo.RepoList {
-	// 		fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
-	//  	}
-	// }
+	////////////////////////////
+// 	for _, ooo := range parsedOrg {
+// 		for i, v := range ooo.RepoList {
+// 			fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
+// 	 	}
+// 	}
 
-	// for i, v := range token.HostToken {
-	// 	fmt.Printf("token n.%d\n\t- Host: %s \n\t- token: %s\n", i, v.Host, v.Token)
-	// }
+// 	for i, v := range quays.HostToken {
+// 		fmt.Printf("token n.%d\n\t- Host: %s \n\t- token: %s\n", i, v.Host, v.Token)
+// 	}
 
-	// for i, v := range org.RepoList {
-	// 	fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
-	// }
+// 	for i, v := range org.RepoList {
+// 		fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
+// 	}
+
+// os.Exit(0)
+	////////////////////////////
 	if ! dryRun {
 		if ! checkLogin(quays){
 			log.Fatal("Error logging to quay hosts")
