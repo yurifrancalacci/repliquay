@@ -272,6 +272,7 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string, orgNam
 		fmt.Printf("Mapping Permission for %d repos for %s\n", len(repoConfig), permissionName)
 	}
 
+	totalPermission := 0
 	for _, v := range repoConfig {
 
 		var loopList []PermStruct
@@ -284,9 +285,11 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string, orgNam
 			fmt.Printf("Mapping permission for repo: %s kind %s\n", v.Name, permissionName)
 		}
 		for _, vv := range loopList {
+			totalPermission++
 			permList = append(permList, PermStruct{ Name: vv.Name, Role: vv.Role, PermissionKind: permissionName, RepoName: v.Name, Organization: orgName })	
 		}
 	}
+	fmt.Printf("Total mapped %s permission for org: %d\n", permissionName, totalPermission)
 	return
 }
 
@@ -295,7 +298,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 	retryCounter := 0 
 // robot
 	if debug {
-		fmt.Println("creating ", len(robotList), "robots")
+		fmt.Println("creating ", len(robotList), "robots for", orgName, "host", quayHost)
 	}
 	for _, v := range robotList {
 		if debug {
@@ -432,7 +435,6 @@ func main() {
 			parsedOrg = append(parsedOrg, org)
 			orgList = append(orgList, org.Name)	
 		}
-		parsedOrg = append(parsedOrg, org)
 	}
 
 	////////////////////////////
@@ -462,6 +464,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	for _, o := range parsedOrg {
+		// fmt.Printf("Parsed ORG------%s\n", o.Name)
 		permList = slices.Concat(permList, createPermissionList(o.RepoList, "robots", o.Name), createPermissionList(o.RepoList, "teams", o.Name))
 	}
 
