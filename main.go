@@ -64,6 +64,7 @@ type PermStruct struct {
 	Role string `yaml:"role"`
 	PermissionKind string
 	RepoName string
+	Organization string
 }
 
 // vars
@@ -217,12 +218,12 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 	return
 }
 
-func createRepoPermission(quayHost string, orgName string, permList []PermStruct, token string, queueLength *int, max_conn int) (status bool) {
+func createRepoPermission(quayHost string, permList []PermStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
 	retryCounter := 0
 
 	if debug {
-		fmt.Printf("Creating %d permissions\n", len(permList))
+		fmt.Printf("Creating %d permissions for host %s\n", len(permList), quayHost)
 	}
 
 	for _, v := range permList {
@@ -241,7 +242,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 			if v.PermissionKind == "robots" {
 				apiCall(
 					quayHost,
-					"/api/v1/repository/"+ orgName +"/"+v.RepoName +"/permissions/user/"+ orgName + "+" + v.Name ,
+					"/api/v1/repository/"+ v.Organization +"/"+v.RepoName +"/permissions/user/"+ v.Organization + "+" + v.Name ,
 					"PUT",
 					token,
 					`{"role":"`+ v.Role +`"}`,
@@ -251,7 +252,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 			} else {
 				apiCall(
 					quayHost,
-					"/api/v1/repository/"+ orgName +"/"+v.RepoName +"/permissions/team/"+ v.Name ,
+					"/api/v1/repository/"+ v.Organization +"/"+v.RepoName +"/permissions/team/"+ v.Name ,
 					"PUT",
 					token,
 					`{"role":"`+ v.Role +`"}`,
@@ -266,9 +267,9 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 	return
 }
 
-func createPermissionList(repoConfig []RepoStruct, permissionName string) (permList []PermStruct) {
+func createPermissionList(repoConfig []RepoStruct, permissionName string, orgName string) (permList []PermStruct) {
 	if debug {
-		fmt.Printf("Mapping Permission for %d repos\n", len(repoConfig))
+		fmt.Printf("Mapping Permission for %d repos for %s\n", len(repoConfig), permissionName)
 	}
 
 	for _, v := range repoConfig {
@@ -283,7 +284,7 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string) (permL
 			fmt.Printf("Mapping permission for repo: %s kind %s\n", v.Name, permissionName)
 		}
 		for _, vv := range loopList {
-			permList = append(permList, PermStruct{ Name: vv.Name, Role: vv.Role, PermissionKind: permissionName, RepoName: v.Name })	
+			permList = append(permList, PermStruct{ Name: vv.Name, Role: vv.Role, PermissionKind: permissionName, RepoName: v.Name, Organization: orgName })	
 		}
 	}
 	return
@@ -364,9 +365,9 @@ func parseIniFile(inifile string, quay string, repolist []string, sleep int, ins
 func main() {
 	var quays Quays
 	var org Organization
-	var permList []PermStruct
 	var parsedOrg []Organization
-	
+	var permList []PermStruct
+
 	var(
 		quaysfile string
 		repo []string
@@ -385,7 +386,7 @@ func main() {
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
 	flag.StringVar(&confFile, "conf", "/etc/repliquay.conf" , "repliquay config file (override all opts)")
-	flag.IntVar(&sleepPeriod, "sleep", 1, "sleep length ms when reaching max connection")
+	flag.IntVar(&sleepPeriod, "sleep", 100, "sleep length ms when reaching max connection")
 	flag.IntVar(&retries, "retries", 3, "max retries on api call failure")
 	flag.BoolVar(&debug, "debug", false, "print debug messages (default false)")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
@@ -418,13 +419,19 @@ func main() {
 	}
 
 	yaml.Unmarshal(yamlData, &quays)
-
+	var orgList []string
 	for _, r := range repo {
 		yamlData, err = os.ReadFile(r)	
 		if err != nil {
 			log.Fatal("Error while reading token file", err)
 		}
 		yaml.Unmarshal(yamlData, &org)
+		if slices.Contains(orgList, org.Name)  {
+			log.Fatalf("Duplicated organization %s", org.Name)
+		} else {
+			parsedOrg = append(parsedOrg, org)
+			orgList = append(orgList, org.Name)	
+		}
 		parsedOrg = append(parsedOrg, org)
 	}
 
@@ -454,9 +461,13 @@ func main() {
 	fmt.Printf("Repliquay: repliquayting... be patient\n")
 
 	var wg sync.WaitGroup
+	for _, o := range parsedOrg {
+		permList = slices.Concat(permList, createPermissionList(o.RepoList, "robots", o.Name), createPermissionList(o.RepoList, "teams", o.Name))
+	}
+
 	for _, v := range quays.HostToken {
 		v.QueueLength = 0
-		for _, o := range parsedOrg {
+		for i, o := range parsedOrg {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -466,11 +477,12 @@ func main() {
 				createRobotTeam(v.Host, o.Name, o.RobotList, o.TeamsList, v.Token, &v.QueueLength, v.MaxConnection)
 				fmt.Printf("creating repositories for organization %s - Host: %s\n", o.Name, v.Host)
 				createRepo(v.Host, o.Name, o.RepoList, v.Token, &v.QueueLength, v.MaxConnection)
-				permList = slices.Concat(permList, createPermissionList(o.RepoList, "robots"), createPermissionList(o.RepoList, "teams"))
-				createRepoPermission(v.Host, o.Name, permList, v.Token, &v.QueueLength, v.MaxConnection)
+				if i == 0 {
+					createRepoPermission(v.Host, permList, v.Token, &v.QueueLength, v.MaxConnection)
+					// permList = slices.Concat(permList, createPermissionList(o.RepoList, "robots", o.Name), createPermissionList(o.RepoList, "teams", o.Name))
+				}
 			}()
-			// fmt.Printf("Repliquay: quay %s organization %s replicated in %s\n", v.Host, o.Name, time.Since(t1))
-		}		
+		}
 	}
 	wg.Wait()
 	fmt.Printf("Repliquay: mission completed in %s\n", time.Since(t1))
