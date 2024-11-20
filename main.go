@@ -73,9 +73,10 @@ var(
 	dryRun bool
 	sleepPeriod int
 	debug bool
+	retries int
 )
 // func
-func apiCall(host string, url string, method string, token string, bodyData string, action string) (httpCode int) {
+func apiCall(host string, url string, method string, token string, bodyData string, action string, retry *int) (httpCode int) {
 
 	var enableTLS string
 	httpCode = 0
@@ -106,17 +107,20 @@ func apiCall(host string, url string, method string, token string, bodyData stri
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		res_body, err := io.ReadAll(res.Body)
 		res.Body.Close()
 
-		if res.StatusCode == 401 {
-			log.Fatalf("%s Unauthorized Response failed with status code: %d and\nbody: %s\nRequest data %s\nurl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-		} 
-
-		if res.StatusCode > 499 {
-			log.Fatalf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s\nurl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-		} else if res.StatusCode > 299 {
-			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %surl %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
+		if res.StatusCode > 299 {
+			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s url %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
+			if *retry >= retries {
+				log.Printf("Too many attempts: unable to execute action %s with requested data %s on host %s successfully\n", action, bodyData, host)	
+			} else {
+				log.Printf("Sleeping %d seconds before a new attempt on %s %s %s\n", *retry, host, bodyData, action)	
+				time.Sleep(time.Duration(*retry) * time.Second)
+				*retry++
+				apiCall(host, url, method, token, bodyData, action, retry)
+			}
 		} else {
 			if debug {
 				log.Printf("%s Action %s completed\n", host, action)
@@ -133,8 +137,8 @@ func apiCall(host string, url string, method string, token string, bodyData stri
 func checkLogin(quays Quays) (login_ok bool) {
 	var wg sync.WaitGroup
 	fmt.Println("check login")
+	retryCounter := 0 
 
-	// queueLength := 0
 	for _, v := range quays.HostToken {
 		v.QueueLength++
 
@@ -148,7 +152,7 @@ func checkLogin(quays Quays) (login_ok bool) {
 		go func(counter *int) {
 			defer wg.Done()
 			*counter--
-			apiCall(v.Host, "/api/v1/user/logs", "GET", v.Token, "", "checking Logins")
+			apiCall(v.Host, "/api/v1/user/logs", "GET", v.Token, "", "checking Logins", &retryCounter)
 		}(&v.QueueLength)
 	}
 	wg.Wait()
@@ -157,6 +161,8 @@ func checkLogin(quays Quays) (login_ok bool) {
 }
 
 func createOrg(quayHost string, orgList Organization, token string) (status bool) {
+	retryCounter := 0 
+
 	if debug {
 		fmt.Println("Creating Org...", orgList.Name)
 	}
@@ -167,6 +173,7 @@ func createOrg(quayHost string, orgList Organization, token string) (status bool
 		token,
 		`{"name":"`+ orgList.Name +`"}`,
 		"create organization" + orgList.Name,
+		&retryCounter,
 	)
 	status = true
 	return
@@ -174,7 +181,8 @@ func createOrg(quayHost string, orgList Organization, token string) (status bool
 
 func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
-	// queueLength := 0
+	retryCounter := 0 
+
 	if debug {
 		fmt.Printf("Creating %d repos\n", len(repoConfig))
 	}
@@ -200,6 +208,7 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 				token,
 				`{"repository":"`+ v.Name +`","visibility":"private","namespace":"`+ orgName +`","description":"repository description"}`,
 				"create repository "+ v.Name,
+				&retryCounter,
 			)
 		}(queueLength)
 	}
@@ -210,7 +219,8 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 
 func createRepoPermission(quayHost string, orgName string, permList []PermStruct, token string, queueLength *int, max_conn int) (status bool) {
 	var wg sync.WaitGroup
-	// queueLength := 0
+	retryCounter := 0
+
 	if debug {
 		fmt.Printf("Creating %d permissions\n", len(permList))
 	}
@@ -236,6 +246,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 					token,
 					`{"role":"`+ v.Role +`"}`,
 					"create repo permission for robot "+ v.Name + " and role "+ v.Role,
+					&retryCounter,
 				)
 			} else {
 				apiCall(
@@ -245,6 +256,7 @@ func createRepoPermission(quayHost string, orgName string, permList []PermStruct
 					token,
 					`{"role":"`+ v.Role +`"}`,
 					"create repo "+v.Name+" permission for teams "+ v.Name + " and role "+ v.Role,
+					&retryCounter,
 				)
 			}
 		}(queueLength)
@@ -279,7 +291,7 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string) (permL
 
 func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, teamList []TeamStruct, token string, queueLength *int, max_conn int)(status bool){
 	var wg sync.WaitGroup
-	// queueLength := 0
+	retryCounter := 0 
 // robot
 	if debug {
 		fmt.Println("creating ", len(robotList), "robots")
@@ -299,7 +311,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		go func(counter *int) {
 			defer wg.Done()
 			*counter--
-			apiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+ v.Name, "PUT", token, `{"description":"`+ v.Description +`"}`, "create robot "+ v.Name)
+			apiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+ v.Name, "PUT", token, `{"description":"`+ v.Description +`"}`, "create robot "+ v.Name, &retryCounter)
 		}(queueLength) 
 	}
 // teams
@@ -321,9 +333,9 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		go func(counter *int) {
 			defer wg.Done()
 			*counter--
-			apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name, "PUT", token, `{"role":"`+ v.Role +`"}`, "create team "+ v.Name)
+			apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name, "PUT", token, `{"role":"`+ v.Role +`"}`, "create team "+ v.Name, &retryCounter)
 			if ldapSync {
-				apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name)
+				apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name, &retryCounter)
 			}
 		}(queueLength) 
 	}
@@ -358,7 +370,7 @@ func main() {
 	var(
 		quaysfile string
 		repo []string
-		iniFile string
+		confFile string
 	)
 
 	t1 := time.Now()
@@ -372,8 +384,9 @@ func main() {
 		}
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
-	flag.StringVar(&iniFile, "ini", "/etc/repliquay.conf" , "repliquay config file (override all opts - default /etc/repliquay.conf)")
+	flag.StringVar(&confFile, "conf", "/etc/repliquay.conf" , "repliquay config file (override all opts)")
 	flag.IntVar(&sleepPeriod, "sleep", 1, "sleep length ms when reaching max connection")
+	flag.IntVar(&retries, "retries", 3, "max retries on api call failure")
 	flag.BoolVar(&debug, "debug", false, "print debug messages (default false)")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
 	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
@@ -383,9 +396,9 @@ func main() {
 
 	p, _ := os.Executable()
 
-	_, err := os.Stat(p+"/"+iniFile)
+	_, err := os.Stat(p+"/"+confFile)
 	if err != nil {
-		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = parseIniFile(iniFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun)
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = parseIniFile(confFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun)
 		// fmt.Println("Parsing ini file ", iniFile, repo)
 	} else {
 		fmt.Println("No config file provided ")
