@@ -112,10 +112,10 @@ func apiCall(host string, url string, method string, token string, bodyData stri
 		res_body, err := io.ReadAll(res.Body)
 		res.Body.Close()
 
-		if res.StatusCode > 299 {
+		if res.StatusCode > 499 {
 			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s url %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-			if *retry >= retries {
-				log.Printf("Too many attempts: unable to execute action %s with requested data %s on host %s successfully\n", action, bodyData, host)	
+			if *retry > retries {
+				log.Fatalf("Too many attempts: unable to execute action %s with requested data %s on host %s successfully\n", action, bodyData, host)
 			} else {
 				log.Printf("Sleeping %d seconds before a new attempt on %s %s %s\n", *retry, host, bodyData, action)	
 				time.Sleep(time.Duration(*retry) * time.Second)
