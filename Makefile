@@ -1,6 +1,6 @@
 VERSION = 0.1
 
-.PHONY: clean
+.PHONY: clean build push
 
 push: build
 	podman manifest push quay.io/barneygumble78/repliquay:$(VERSION)
