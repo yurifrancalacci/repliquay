@@ -351,10 +351,9 @@ func parseIniFile(inifile string, quay string, repolist []string, sleep int, ins
 	inidata, err := ini.Load(inifile)
 
 	if err != nil {
-		log.Print("Warning: no ini file found, loading default values")
-		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = quay , repolist, sleep, insec, ldap, dry
+		log.Print("Warning: no conf option found, loading default values from /etc/repliquay.conf")
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = quay, repolist, sleep, insec, ldap, dry
 		return
-		
 	}
 	quaysfile = inidata.Section("quays").Key("file").String()
 	repo = inidata.Section("repos").Key("files").Strings(",")
@@ -399,7 +398,6 @@ func main() {
 	flag.Parse()
 
 	p, _ := os.Executable()
-
 	_, err := os.Stat(p+"/"+confFile)
 	if err != nil {
 		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = parseIniFile(confFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun)
@@ -418,7 +416,7 @@ func main() {
 	yamlData, err := os.ReadFile(quaysfile)
 	
 	if err != nil {
-		log.Fatal("Error while reading token file", err)
+		log.Fatal("Error while reading quays file ", err)
 	}
 
 	yaml.Unmarshal(yamlData, &quays)
@@ -426,7 +424,7 @@ func main() {
 	for _, r := range repo {
 		yamlData, err = os.ReadFile(r)	
 		if err != nil {
-			log.Fatal("Error while reading token file", err)
+			log.Fatal("Error while reading quays file ", err)
 		}
 		yaml.Unmarshal(yamlData, &org)
 		if slices.Contains(orgList, org.Name)  {
