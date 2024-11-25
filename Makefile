@@ -9,4 +9,4 @@ build: clean
 	podman build --platform linux/amd64,linux/arm64 --manifest quay.io/barneygumble78/repliquay:$(VERSION) .
 
 clean:
-	-podman untag quay.io/barneygumble78/repliquay:$(VERSION)
+	-podman manifest rm quay.io/barneygumble78/repliquay:$(VERSION)

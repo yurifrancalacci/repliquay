@@ -13,6 +13,7 @@ import (
 	"errors"
 	// "time"
 	"net/http"
+	"crypto/tls"
 	"gopkg.in/yaml.v3"
 	"gopkg.in/ini.v1"
 )
@@ -75,16 +76,20 @@ var(
 	sleepPeriod int
 	debug bool
 	retries int
+	verify bool
 )
 // func
 func apiCall(host string, url string, method string, token string, bodyData string, action string, retry *int) (httpCode int) {
 
 	var enableTLS string
 	httpCode = 0
+	tr := &http.Transport{
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: verify},
+    }
 
 	if !dryRun {	
 
-		client := &http.Client{}
+		client := &http.Client{Transport: tr}
 		req := &http.Request{}
 		if !insecure {
 			enableTLS = "s"
@@ -351,7 +356,7 @@ func parseIniFile(inifile string, quay string, repolist []string, sleep int, ins
 	inidata, err := ini.Load(inifile)
 
 	if err != nil {
-		log.Print("Warning: no conf option found, loading default values from /etc/repliquay.conf")
+		log.Print("Warning: no conf option found, loading default values from /repos/repliquay.conf")
 		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = quay, repolist, sleep, insec, ldap, dry
 		return
 	}
@@ -387,13 +392,14 @@ func main() {
 		}
 	})
 	flag.StringVar(&quaysfile, "quaysfile", "" , "quay token file name")
-	flag.StringVar(&confFile, "conf", "/etc/repliquay.conf" , "repliquay config file (override all opts)")
+	flag.StringVar(&confFile, "conf", "/repos/repliquay.conf" , "repliquay config file (override all opts)")
 	flag.IntVar(&sleepPeriod, "sleep", 100, "sleep length ms when reaching max connection")
 	flag.IntVar(&retries, "retries", 3, "max retries on api call failure")
 	flag.BoolVar(&debug, "debug", false, "print debug messages (default false)")
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
 	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
 	flag.BoolVar(&dryRun, "dryrun", false, "enable dry run (default false)")
+	flag.BoolVar(&verify, "verify", true, "enable TLS validation (default true)")
 
 	flag.Parse()
 
