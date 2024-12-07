@@ -1,4 +1,4 @@
-VERSION = 0.1
+VERSION = 0.1.1
 
 .PHONY: clean build push
 
