@@ -1,33 +1,39 @@
 package main
 
 import (
+	// "bytes"
+	"errors"
+	"flag"
 	"fmt"
+
+	// "io"
 	"log"
 	"os"
-	"io"
-	"sync"
-	"bytes"
-	"time"
+	"repliquay/repliquay/internal/apicall"
+	"repliquay/repliquay/internal/quayconfig"
 	"slices"
-	"flag"
-	"errors"
+	"sync"
+	"time"
+
 	// "time"
-	"net/http"
-	"crypto/tls"
-	"gopkg.in/yaml.v3"
+	// "crypto/tls"
+	// "net/http"
+
 	"gopkg.in/ini.v1"
+	"gopkg.in/yaml.v3"
 )
+
 
 type Quays struct {
 	HostToken []HostToken `yaml:"quays"`
    }
 
-type hostConnection struct {
-	hostname string
-	max_connections int
-	queueLength int
-	mx sync.Mutex
-}
+// type hostConnection struct {
+// 	hostname string
+// 	max_connections int
+// 	queueLength int
+// 	mx sync.Mutex
+// }
 
 type HostToken struct {
 	Host string `yaml:"host"`
@@ -82,113 +88,116 @@ var(
 	sleepPeriod int
 	debug bool
 	retries int
-	verify bool
+	skipVerify bool
+	clone bool
 )
 // func
-func (hc *hostConnection) inc() {
-    hc.mx.Lock()
-    defer hc.mx.Unlock()
-    hc.queueLength++
-}
+// func (hc *hostConnection) inc() {
+//     hc.mx.Lock()
+//     defer hc.mx.Unlock()
+//     hc.queueLength++
+// }
 
-func (hc *hostConnection) dec() {
-    hc.mx.Lock()
-    defer hc.mx.Unlock()
-    hc.queueLength--
-}
+// func (hc *hostConnection) dec() {
+//     hc.mx.Lock()
+//     defer hc.mx.Unlock()
+//     hc.queueLength--
+// }
 
-func apiCall(host string, url string, method string, token string, bodyData string, action string, retry *int, hostConn *hostConnection) (httpCode int) {
+// func apiCall(host string, url string, method string, token string, bodyData string, action string, retry *int, hostConn *hostConnection) (httpCode int, responseBody string) {
 
-	var enableTLS string
-	httpCode = 0
-	tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: verify},
-    }
-// move to dryRun block
-// sleep if too many connections
-	for hostConn.queueLength >= hostConn.max_connections  && sleepPeriod != 0 {
-		if debug {
-			fmt.Printf("%s: APICALL %s action too many connections %d. Sleeping %s\n",host, action, hostConn.queueLength, time.Duration(sleepPeriod) * time.Millisecond)
-		}
-		time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
-	}
-	hostConn.inc()
-	if debug {
-		fmt.Printf("%s: queue %d action %s\n",hostConn.hostname, hostConn.queueLength, action)
-	}
-	if !dryRun {	
+// 	var enableTLS string
+// 	httpCode = 0
+// 	fmt.Println("verify:", skipVerify)
+// 	tr := &http.Transport{
+//         TLSClientConfig: &tls.Config{InsecureSkipVerify: skipVerify},
+//     }
+// // move to dryRun block
+// // sleep if too many connections
+// 	for hostConn.queueLength >= hostConn.max_connections  && sleepPeriod != 0 {
+// 		if debug {
+// 			fmt.Printf("%s: APICALL %s action too many connections %d. Sleeping %s\n",host, action, hostConn.queueLength, time.Duration(sleepPeriod) * time.Millisecond)
+// 		}
+// 		time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
+// 	}
+// 	hostConn.inc()
+// 	if debug {
+// 		fmt.Printf("%s: queue %d action %s\n",hostConn.hostname, hostConn.queueLength, action)
+// 	}
+// 	if !dryRun {	
 
-		client := &http.Client{Transport: tr}
-		req := &http.Request{}
-		if !insecure {
-			enableTLS = "s"
-		}
+// 		client := &http.Client{Transport: tr}
+// 		req := &http.Request{}
+// 		if !insecure {
+// 			enableTLS = "s"
+// 		}
 
-		if bodyData != "" {
-			jsonBody := []byte(bodyData)
-			bodyReader := bytes.NewReader(jsonBody)
-			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, bodyReader)
-		} else {
-			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, nil)
-		}
+// 		if bodyData != "" {
+// 			jsonBody := []byte(bodyData)
+// 			bodyReader := bytes.NewReader(jsonBody)
+// 			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, bodyReader)
+// 		} else {
+// 			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, nil)
+// 		}
 
-		if token != "" {
-			req.Header.Add("Authorization", "Bearer " + token)
-			req.Header.Add("Content-Type", "application/json")
-		}
+// 		if token != "" {
+// 			req.Header.Add("Authorization", "Bearer " + token)
+// 			req.Header.Add("Content-Type", "application/json")
+// 		}
 
-		res, err := client.Do(req)
+// 		res, err := client.Do(req)
 
-		if err != nil {
-			log.Fatal(err)
-		}
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
 
-		res_body, err := io.ReadAll(res.Body)
-		res.Body.Close()
+// 		res_body, err := io.ReadAll(res.Body)
+// 		res.Body.Close()
 
-		if res.StatusCode > 499 {
-			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s url %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-			if *retry > retries {
-				log.Fatalf("Too many attempts: unable to execute action %s with requested data %s on host %s successfully\n", action, bodyData, host)
-			} else {
-				log.Printf("Sleeping %d seconds before a new attempt on %s %s %s\n", *retry, host, bodyData, action)	
-				time.Sleep(time.Duration(*retry) * time.Second)
-				*retry++
-				apiCall(host, url, method, token, bodyData, action, retry, hostConn)
-			}
-		} else {
-			if debug {
-				log.Printf("%s Action %s completed\n", host, action)
-			}
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		httpCode = res.StatusCode
-	}
-	hostConn.dec()
-	if debug {
-		fmt.Printf("%s: queue %d action %s\n",hostConn.hostname, hostConn.queueLength, action)
-	}
-	return
-}
+// 		if res.StatusCode > 499 {
+// 			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s url %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
+// 			if *retry > retries {
+// 				log.Fatalf("Too many attempts: unable to execute action %s with requested data %s on host %s successfully\n", action, bodyData, host)
+// 			} else {
+// 				log.Printf("Sleeping %d seconds before a new attempt on %s %s %s\n", *retry, host, bodyData, action)	
+// 				time.Sleep(time.Duration(*retry) * time.Second)
+// 				*retry++
+// 				apiCall(host, url, method, token, bodyData, action, retry, hostConn)
+// 			}
+// 		} else {
+// 			if debug {
+// 				log.Printf("%s Action %s completed\n", host, action)
+// 			}
+// 		}
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+// 		httpCode = res.StatusCode
+// 		responseBody = string(res_body)
+// 	}
+// 	hostConn.dec()
+// 	if debug {
+// 		fmt.Printf("%s: queue %d action %s\n",hostConn.hostname, hostConn.queueLength, action)
+// 	}
+// 	return
+// }
 
-func checkLogin(quayHost string, token string, hostConn *hostConnection) (login_ok bool) {
+func checkLogin(quayHost string, token string, hostConn *apicall.HostConnection) (login_ok bool) {
 	fmt.Println("check login")
 	retryCounter := 0 
 
-	apiCall(quayHost, "/api/v1/user/logs", "GET", token, "", "checking Logins", &retryCounter, hostConn)
+	hostConn.ApiCall(quayHost, "/api/v1/user/logs", "GET", token, "", "checking Logins", &retryCounter)
 	login_ok = true
 	return
 }
 
-func createOrg(quayHost string, orgList Organization, token string, hostConn *hostConnection) (status bool) {
+func createOrg(quayHost string, orgList Organization, token string, hostConn *apicall.HostConnection) (status bool) {
 	retryCounter := 0 
 
 	if debug {
 		fmt.Println("Creating Org...", orgList.Name)
 	}
-	apiCall(
+	hostConn.ApiCall(
 		quayHost,
 		"/api/v1/organization/",
 		"POST",
@@ -196,13 +205,12 @@ func createOrg(quayHost string, orgList Organization, token string, hostConn *ho
 		`{"name":"`+ orgList.Name +`"}`,
 		"create organization" + orgList.Name,
 		&retryCounter,
-		hostConn,
 	)
 	status = true
 	return
 }
 
-func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token string, hostConn *hostConnection) (status bool) {
+func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token string, hostConn *apicall.HostConnection) (status bool) {
 	var wg sync.WaitGroup
 	retryCounter := 0 
 
@@ -216,7 +224,7 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			apiCall(
+			hostConn.ApiCall(
 				quayHost,
 				"/api/v1/repository",
 				"POST",
@@ -224,7 +232,6 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 				`{"repository":"`+ v.Name +`","visibility":"private","namespace":"`+ orgName +`","description":"repository description"}`,
 				"create repository "+ v.Name,
 				&retryCounter,
-				hostConn,
 			)
 		}()
 	}
@@ -233,7 +240,7 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 	return
 }
 
-func createRepoPermission(quayHost string, permList []PermStruct, token string, hostConn *hostConnection) (status bool) {
+func createRepoPermission(quayHost string, permList []PermStruct, token string, hostConn *apicall.HostConnection) (status bool) {
 	var wg sync.WaitGroup
 	retryCounter := 0
 
@@ -246,7 +253,7 @@ func createRepoPermission(quayHost string, permList []PermStruct, token string, 
 		go func() {
 			defer wg.Done()
 			if v.PermissionKind == "robots" {
-				apiCall(
+				hostConn.ApiCall(
 					quayHost,
 					"/api/v1/repository/"+ v.Organization +"/"+v.RepoName +"/permissions/user/"+ v.Organization + "+" + v.Name ,
 					"PUT",
@@ -254,10 +261,9 @@ func createRepoPermission(quayHost string, permList []PermStruct, token string, 
 					`{"role":"`+ v.Role +`"}`,
 					"create repo permission for robot "+ v.Name + " and role "+ v.Role,
 					&retryCounter,
-					hostConn,
 				)
 			} else {
-				apiCall(
+				hostConn.ApiCall(
 					quayHost,
 					"/api/v1/repository/"+ v.Organization +"/"+v.RepoName +"/permissions/team/"+ v.Name ,
 					"PUT",
@@ -265,7 +271,6 @@ func createRepoPermission(quayHost string, permList []PermStruct, token string, 
 					`{"role":"`+ v.Role +`"}`,
 					"create repo "+v.Name+" permission for teams "+ v.Name + " and role "+ v.Role,
 					&retryCounter,
-					hostConn,
 				)
 			}
 		}()
@@ -301,7 +306,7 @@ func createPermissionList(repoConfig []RepoStruct, permissionName string, orgNam
 	return
 }
 
-func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, teamList []TeamStruct, token string, hostConn *hostConnection)(status bool){
+func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, teamList []TeamStruct, token string, hostConn *apicall.HostConnection)(status bool){
 	var wg sync.WaitGroup
 	retryCounter := 0 
 // robot
@@ -315,7 +320,7 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			apiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+ v.Name, "PUT", token, `{"description":"`+ v.Description +`"}`, "create robot "+ v.Name, &retryCounter, hostConn)
+			hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+ v.Name, "PUT", token, `{"description":"`+ v.Description +`"}`, "create robot "+ v.Name, &retryCounter)
 		}() 
 	}
 // teams
@@ -329,9 +334,9 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name, "PUT", token, `{"role":"`+ v.Role +`"}`, "create team "+ v.Name, &retryCounter, hostConn)
+			hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name, "PUT", token, `{"role":"`+ v.Role +`"}`, "create team "+ v.Name, &retryCounter)
 			if ldapSync {
-				apiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name, &retryCounter, hostConn)
+				hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+ v.Name +"/syncing", "POST", token, `{"group_dn":"`+ v.GroupDN +`"}`, "create team sync "+ v.Name, &retryCounter)
 			}
 		}() 
 	}
@@ -340,12 +345,12 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 	return
 }
 
-func parseIniFile(inifile string, quay string, repolist []string, sleep int, insec bool, ldap bool, dry bool ) (quaysfile string, repo []string, sleepPeriod int, insecure bool, ldapSync bool, dryRun bool){
+func parseIniFile(inifile string, quay string, repolist []string, sleep int, insec bool, ldap bool, dry bool, _clone bool ) (quaysfile string, repo []string, sleepPeriod int, insecure bool, ldapSync bool, dryRun bool, clone bool){
 	inidata, err := ini.Load(inifile)
 
 	if err != nil {
 		log.Print("Warning: no conf option found, loading default values from /repos/repliquay.conf")
-		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = quay, repolist, sleep, insec, ldap, dry
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, clone = quay, repolist, sleep, insec, ldap, dry, _clone
 		return
 	}
 	quaysfile = inidata.Section("quays").Key("file").String()
@@ -354,6 +359,7 @@ func parseIniFile(inifile string, quay string, repolist []string, sleep int, ins
 	debug, _ = inidata.Section("params").Key("debug").Bool()
 	ldapSync, _ = inidata.Section("params").Key("ldapsync").Bool()
 	dryRun, _ = inidata.Section("params").Key("dryrun").Bool()
+	clone, _ = inidata.Section("params").Key("clone").Bool()
 	return
 }
 
@@ -362,7 +368,7 @@ func main() {
 	var org Organization
 	var parsedOrg []Organization
 	var permList []PermStruct
-	hostConn := make(map[string]*hostConnection)
+	hostConn := make(map[string]*apicall.HostConnection)
 
 	var(
 		quaysfile string
@@ -388,14 +394,15 @@ func main() {
 	flag.BoolVar(&insecure, "insecure", false, "disable TLS connection (default false)")
 	flag.BoolVar(&ldapSync, "ldapsync", false, "enable ldap sync (default false)")
 	flag.BoolVar(&dryRun, "dryrun", false, "enable dry run (default false)")
-	flag.BoolVar(&verify, "verify", true, "enable TLS validation (default true)")
+	flag.BoolVar(&skipVerify, "skipVerify", false, "enable/disable TLS validation")
+	flag.BoolVar(&clone, "clone", false, "clone first quay configuration to others. Requires >= 2 quays (ignore all other options)")
 
 	flag.Parse()
 
 	p, _ := os.Executable()
 	_, err := os.Stat(p+"/"+confFile)
 	if err != nil {
-		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun = parseIniFile(confFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun)
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, clone = parseIniFile(confFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, clone)
 		// fmt.Println("Parsing ini file ", iniFile, repo)
 	} else {
 		fmt.Println("No config file provided ")
@@ -430,22 +437,18 @@ func main() {
 		}
 	}
 
-	////////////////////////////
-// 	for _, ooo := range parsedOrg {
-// 		for i, v := range ooo.RepoList {
-// 			fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
-// 	 	}
-// 	}
+	if clone {
+		var qc quayconfig.QuayConfig
+		qc.SetGlobalVars(debug, skipVerify, dryRun, insecure, sleepPeriod, retries)
+		if len(quays.HostToken) < 2 {
+			log.Fatalf("Cannot clone. 2 quays registry required, got %d", len(quays.HostToken))
+		}
+		log.Printf("Cloning repository %s to %s", quays.HostToken[0].Host, quays.HostToken[1].Host)
+		qc.GetConfFromQuay(quays.HostToken[0].Host, quays.HostToken[0].Token, quays.HostToken[0].MaxConnection)
 
-// 	for i, v := range quays.HostToken {
-// 		fmt.Printf("token n.%d\n\t- Host: %s \n\t- token: %s\n", i, v.Host, v.Token)
-// 	}
+		os.Exit(0)
+	}
 
-// 	for i, v := range org.RepoList {
-// 		fmt.Printf("Repository n.%d - Name: %s\n", i, v.Name)
-// 	}
-
-// os.Exit(0)
 	fmt.Printf("Repliquay: repliquayting... be patient\n")
 
 	var wg sync.WaitGroup
@@ -455,7 +458,8 @@ func main() {
 	}
 
 	for _, v := range quays.HostToken {
-		h := hostConnection{ queueLength: 0, max_connections: v.MaxConnection, hostname: v.Host}
+		h := apicall.HostConnection{ QueueLength: 0, Max_connections: v.MaxConnection, Hostname: v.Host}
+		h.SetGlobalVars(debug, skipVerify, dryRun, insecure, sleepPeriod, retries)
 		hostConn[v.Host] = &h
 		wg.Add(1)
 		go func() {
