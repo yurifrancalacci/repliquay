@@ -1,4 +1,3 @@
-# quay_endpoint: registry-quay.apps.fcakgt01.gestione.enet
 quay_organization: devops-test24
 quay_organization_role_name: devops
 repositories:
