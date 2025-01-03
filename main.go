@@ -1,23 +1,17 @@
 package main
 
 import (
-	// "bytes"
 	"errors"
 	"flag"
 	"fmt"
-
-	// "io"
 	"log"
 	"os"
 	"repliquay/repliquay/internal/apicall"
 	"repliquay/repliquay/internal/quayconfig"
 	"slices"
+	"strings"
 	"sync"
 	"time"
-
-	// "time"
-	// "crypto/tls"
-	// "net/http"
 
 	"gopkg.in/ini.v1"
 	"gopkg.in/yaml.v3"
@@ -26,13 +20,6 @@ import (
 type Quays struct {
 	HostToken []HostToken `yaml:"quays"`
 }
-
-// type hostConnection struct {
-// 	hostname string
-// 	max_connections int
-// 	queueLength int
-// 	mx sync.Mutex
-// }
 
 type HostToken struct {
 	Host          string `yaml:"host"`
@@ -90,97 +77,6 @@ var (
 	skipVerify  bool
 	clone       bool
 )
-
-// func
-// func (hc *hostConnection) inc() {
-//     hc.mx.Lock()
-//     defer hc.mx.Unlock()
-//     hc.queueLength++
-// }
-
-// func (hc *hostConnection) dec() {
-//     hc.mx.Lock()
-//     defer hc.mx.Unlock()
-//     hc.queueLength--
-// }
-
-// func apiCall(host string, url string, method string, token string, bodyData string, action string, retry *int, hostConn *hostConnection) (httpCode int, responseBody string) {
-
-// 	var enableTLS string
-// 	httpCode = 0
-// 	fmt.Println("verify:", skipVerify)
-// 	tr := &http.Transport{
-//         TLSClientConfig: &tls.Config{InsecureSkipVerify: skipVerify},
-//     }
-// // move to dryRun block
-// // sleep if too many connections
-// 	for hostConn.queueLength >= hostConn.max_connections  && sleepPeriod != 0 {
-// 		if debug {
-// 			fmt.Printf("%s: APICALL %s action too many connections %d. Sleeping %s\n",host, action, hostConn.queueLength, time.Duration(sleepPeriod) * time.Millisecond)
-// 		}
-// 		time.Sleep(time.Duration(sleepPeriod) * time.Millisecond)
-// 	}
-// 	hostConn.inc()
-// 	if debug {
-// 		fmt.Printf("%s: queue %d action %s\n",hostConn.hostname, hostConn.queueLength, action)
-// 	}
-// 	if !dryRun {
-
-// 		client := &http.Client{Transport: tr}
-// 		req := &http.Request{}
-// 		if !insecure {
-// 			enableTLS = "s"
-// 		}
-
-// 		if bodyData != "" {
-// 			jsonBody := []byte(bodyData)
-// 			bodyReader := bytes.NewReader(jsonBody)
-// 			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, bodyReader)
-// 		} else {
-// 			req, _ = http.NewRequest(method, "http"+ enableTLS +"://" + host + url, nil)
-// 		}
-
-// 		if token != "" {
-// 			req.Header.Add("Authorization", "Bearer " + token)
-// 			req.Header.Add("Content-Type", "application/json")
-// 		}
-
-// 		res, err := client.Do(req)
-
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-
-// 		res_body, err := io.ReadAll(res.Body)
-// 		res.Body.Close()
-
-// 		if res.StatusCode > 499 {
-// 			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s url %s method %s", host, res.StatusCode, res_body, bodyData, url, method)
-// 			if *retry > retries {
-// 				log.Fatalf("Too many attempts: unable to execute action %s with requested data %s on host %s successfully\n", action, bodyData, host)
-// 			} else {
-// 				log.Printf("Sleeping %d seconds before a new attempt on %s %s %s\n", *retry, host, bodyData, action)
-// 				time.Sleep(time.Duration(*retry) * time.Second)
-// 				*retry++
-// 				apiCall(host, url, method, token, bodyData, action, retry, hostConn)
-// 			}
-// 		} else {
-// 			if debug {
-// 				log.Printf("%s Action %s completed\n", host, action)
-// 			}
-// 		}
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		httpCode = res.StatusCode
-// 		responseBody = string(res_body)
-// 	}
-// 	hostConn.dec()
-// 	if debug {
-// 		fmt.Printf("%s: queue %d action %s\n",hostConn.hostname, hostConn.queueLength, action)
-// 	}
-// 	return
-// }
 
 func checkLogin(quayHost string, token string, hostConn *apicall.HostConnection) (login_ok bool) {
 	fmt.Println("check login")
@@ -422,30 +318,65 @@ func main() {
 
 	yaml.Unmarshal(yamlData, &quays)
 	var orgList []string
-	for _, r := range repo {
-		yamlData, err = os.ReadFile(r)
-		if err != nil {
-			log.Fatal("Error while reading quays file ", err)
-		}
-		yaml.Unmarshal(yamlData, &org)
-		if slices.Contains(orgList, org.Name) {
-			log.Fatalf("Duplicated organization %s", org.Name)
-		} else {
-			parsedOrg = append(parsedOrg, org)
-			orgList = append(orgList, org.Name)
+	if !clone {	
+		for _, r := range repo {
+			yamlData, err = os.ReadFile(r)
+			if err != nil {
+				log.Fatal("Error while reading quays file ", err)
+			}
+			yaml.Unmarshal(yamlData, &org)
+			if slices.Contains(orgList, org.Name) {
+				log.Fatalf("Duplicated organization %s", org.Name)
+			} else {
+				parsedOrg = append(parsedOrg, org)
+				orgList = append(orgList, org.Name)
+			}
 		}
 	}
-
 	if clone {
 		var qc quayconfig.QuayConfig
+		parsedOrg = nil
+		orgList = nil
 		qc.SetGlobalVars(debug, skipVerify, dryRun, insecure, sleepPeriod, retries)
 		if len(quays.HostToken) < 2 {
 			log.Fatalf("Cannot clone. 2 quays registry required, got %d", len(quays.HostToken))
 		}
 		log.Printf("Cloning repository %s to %s", quays.HostToken[0].Host, quays.HostToken[1].Host)
-		qc.GetConfFromQuay(quays.HostToken[0].Host, quays.HostToken[0].Token, quays.HostToken[0].MaxConnection)
+		org_repos, org_teams, org_robots, org_repo_perms := qc.GetConfFromQuay(quays.HostToken[0].Host, quays.HostToken[0].Token, quays.HostToken[0].MaxConnection)
 
-		os.Exit(0)
+		//remove first quay instance as cloning from first to others
+		_, tempQuay := quays.HostToken[0], quays.HostToken[1:]
+		quays.HostToken = tempQuay
+
+		for k, r := range org_repos {
+			var robotList []RobotStruct
+			var teamList []TeamStruct
+			var repoList []RepoStruct
+			for _, v := range org_robots[k] {
+				robotList = append(robotList, RobotStruct{Name: v.Name, Description: v.Description})
+			}
+			for _, v := range org_teams[k] {
+				teamList = append(teamList, TeamStruct{Name: v.Name, Description: v.Description, GroupDN: "", Role: v.Role})
+			}
+
+			for _, v := range r {
+				var robotPerms, teamsPerms []PermStruct
+				for _, p := range org_repo_perms[k][v] {
+					// var kind, n, rp string
+					perm := strings.Split(p, "#")
+					kind, n, rp := perm[0], perm[1], perm[2]
+					if kind == "robot" {
+						robotPerms = append(robotPerms, PermStruct{Name: n, Role: rp, PermissionKind: "robots", RepoName: v, Organization: k})
+					} else {
+						teamsPerms = append(teamsPerms, PermStruct{Name: n, Role: rp, PermissionKind: "teams", RepoName: v, Organization: k})
+					}
+				}
+				repoList = append(repoList, RepoStruct{Mirror: false, Name: v, PermissionList: RepoPermissionStruct{Robots: robotPerms, Teams: teamsPerms}})
+			}
+			parsedOrg = append(parsedOrg, Organization{Name: k, OrgRoleName: k, RobotList: robotList, TeamsList: teamList, RepoList: repoList})
+		}
+
+		// os.Exit(0)
 	}
 
 	fmt.Printf("Repliquay: repliquayting... be patient\n")
@@ -473,6 +404,7 @@ func main() {
 	wg.Wait()
 
 	for _, v := range quays.HostToken {
+		fmt.Println("len parsedOrg", len(parsedOrg))
 		for i, o := range parsedOrg {
 			wg.Add(1)
 			go func() {
@@ -484,6 +416,7 @@ func main() {
 				fmt.Printf("creating repositories for organization %s - Host: %s\n", o.Name, v.Host)
 				createRepo(v.Host, o.Name, o.RepoList, v.Token, hostConn[v.Host])
 				if i == 0 {
+					fmt.Printf("creating permissions for repositories in organization %s - Host: %s\n", o.Name, v.Host)
 					createRepoPermission(v.Host, permList, v.Token, hostConn[v.Host])
 				}
 			}()

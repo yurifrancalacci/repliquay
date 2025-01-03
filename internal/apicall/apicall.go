@@ -45,7 +45,7 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 
 	var enableTLS string
 	httpCode = 0
-	fmt.Println("verify:", hc.SkipVerify)
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: hc.SkipVerify},
 	}
