@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"repliquay/repliquay/internal/apicall"
 	"strings"
+	"sync"
 )
 
 type QuayConfig struct {
@@ -147,15 +148,29 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 	org_teams = make(map[string][]teamStruct)
 	org_robots = make(map[string][]robotStruct)
 	repo_perms = make(map[string]map[string][]string)
+	var wg sync.WaitGroup
 
 	json.Unmarshal([]byte(orgList), &quay_orgs)
 
-	if len(orgList) > 0 {
+	if len(quay_orgs.Organizations) > 0 {
 		for i, v := range quay_orgs.Organizations {
-			org_teams[v.Name] = getQuayOrg(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
-			org_robots[v.Name] = getQuayOrgRobots(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
-			org_repos[v.Name], repo_perms[v.Name] = getQuayRepos(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
-			// if qc.Debug {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				org_teams[v.Name] = getQuayOrg(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
+			}()
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				org_robots[v.Name] = getQuayOrgRobots(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
+			}()
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				org_repos[v.Name], repo_perms[v.Name] = getQuayRepos(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
+			}()
+				// if qc.Debug {
 				for _, k := range org_teams[v.Name] {
 					fmt.Printf("org %s team %s\n", v.Name, k)
 				}
@@ -168,7 +183,9 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 				for _, k := range repo_perms[v.Name] {
 					fmt.Printf("org %s perm %s\n", v.Name, k)
 				}
-			// }
+				// }
+
+			wg.Wait()
 		}
 	}
 	return
@@ -216,6 +233,8 @@ func getQuayOrgRobots(quay string, token string, orgName string, hostStatus *api
 func getQuayRepos(quay string, token string, orgName string, hostStatus *apicall.HostConnection) (org_repos []string, org_repo_perms map[string][]string) {
 	var quay_repos QuayRepositories
 	org_repo_perms = make(map[string][]string)
+	var wg sync.WaitGroup
+
 
 	fmt.Println("getQuayRepos------: /api/v1/repository?public=true&namespace=" + orgName)
 	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository?public=true&namespace="+orgName, "GET", token, "", "get organizations repositories", &hostStatus.Retries)
@@ -224,8 +243,13 @@ func getQuayRepos(quay string, token string, orgName string, hostStatus *apicall
 	// fmt.Println("repositories parsed len", len(quay_repos.Repositories), "repo[0] name ", quay_repos.Repositories[0].Name, "quay_repos array", quay_repos.Repositories, "apiResponse", apiResponse)
 	for _, v := range quay_repos.Repositories {
 		org_repos = append(org_repos, v.Name)
-		org_repo_perms[v.Name] = getQuayRepoPerms(quay, token, orgName, v.Name, hostStatus)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			org_repo_perms[v.Name] = getQuayRepoPerms(quay, token, orgName, v.Name, hostStatus)
+		}()
 	}
+	wg.Wait()
 	return
 }
 
@@ -247,7 +271,6 @@ func getQuayRepoPerms(quay string, token string, orgName string, repo_name strin
 	for _, v := range quay_repo_perms.Permissions {
 		if v.Is_robot {
 			rb := strings.Split(v.Name, "+")
-			fmt.Println("appending role --- ", "robot#"+rb[1]+"#"+v.Role )
 			repo_perms = append(repo_perms, "robot#"+rb[1]+"#"+v.Role)
 		}
 	}

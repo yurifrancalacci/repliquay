@@ -17,6 +17,7 @@ type HostConnection struct {
 	SleepPeriod, Retries                int
 	Max_connections                     int
 	QueueLength                         int
+	TotalApiCall						int
 	Mx                                  sync.Mutex
 }
 
@@ -33,6 +34,7 @@ func (hc *HostConnection) inc() {
 	hc.Mx.Lock()
 	defer hc.Mx.Unlock()
 	hc.QueueLength++
+	hc.TotalApiCall++
 }
 
 func (hc *HostConnection) dec() {
@@ -59,7 +61,7 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 	}
 	hc.inc()
 	if hc.Debug {
-		fmt.Printf("%s: queue %d action %s\n", hc.Hostname, hc.QueueLength, action)
+		fmt.Printf("%s: queue %d/%d action %s\n", hc.Hostname, hc.QueueLength, hc.Max_connections, action)
 	}
 	if !hc.DryRun {
 
@@ -90,6 +92,9 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 
 		res_body, err := io.ReadAll(res.Body)
 		res.Body.Close()
+		if (hc.TotalApiCall % 10 == 0 ) {
+			fmt.Printf("Host %s: completed %d Api Call\n", hc.Hostname, hc.TotalApiCall)
+		}
 
 		if res.StatusCode > 499 {
 			log.Printf("%s Response failed with status code: %d and\nbody: %s\nRequest data %s url %s method %s", host, res.StatusCode, res_body, bodyData, url, method)

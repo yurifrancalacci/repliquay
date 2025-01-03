@@ -318,7 +318,7 @@ func main() {
 
 	yaml.Unmarshal(yamlData, &quays)
 	var orgList []string
-	if !clone {	
+	if !clone {
 		for _, r := range repo {
 			yamlData, err = os.ReadFile(r)
 			if err != nil {
