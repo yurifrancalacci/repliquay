@@ -18,6 +18,7 @@ type HostConnection struct {
 	Max_connections                     int
 	QueueLength                         int
 	TotalApiCall						int
+	LastCompletedApiCallTs				int64
 	Mx                                  sync.Mutex
 }
 
@@ -35,12 +36,19 @@ func (hc *HostConnection) inc() {
 	defer hc.Mx.Unlock()
 	hc.QueueLength++
 	hc.TotalApiCall++
+	hc.LastCompletedApiCallTs = time.Now().Unix()
 }
 
 func (hc *HostConnection) dec() {
 	hc.Mx.Lock()
 	defer hc.Mx.Unlock()
 	hc.QueueLength--
+}
+
+func (hc *HostConnection) resetConnectionCounter() {
+	hc.Mx.Lock()
+	defer hc.Mx.Unlock()
+	hc.QueueLength = 0
 }
 
 func (hc *HostConnection) ApiCall(host string, url string, method string, token string, bodyData string, action string, retry *int) (httpCode int, responseBody string) {
@@ -58,13 +66,17 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 			fmt.Printf("%s: APICALL %s action too many connections %d. Sleeping %s\n", host, action, hc.QueueLength, time.Duration(hc.SleepPeriod)*time.Millisecond)
 		}
 		time.Sleep(time.Duration(hc.SleepPeriod) * time.Millisecond)
-	}
-	hc.inc()
-	if hc.Debug {
-		fmt.Printf("%s: queue %d/%d action %s\n", hc.Hostname, hc.QueueLength, hc.Max_connections, action)
+		if ((hc.LastCompletedApiCallTs - time.Now().Unix()) > 30 ) {
+			fmt.Printf("%s: ----> APICALL last apicall at %d. Resetting counter to avoid stuck\n", host, hc.LastCompletedApiCallTs)
+			hc.resetConnectionCounter()
+		}
 	}
 	if !hc.DryRun {
-
+		hc.inc()
+		if hc.Debug {
+			fmt.Printf("%s: queue %d/%d action %s\n", hc.Hostname, hc.QueueLength, hc.Max_connections, action)
+		}
+	
 		client := &http.Client{Transport: tr}
 		req := &http.Request{}
 		if !hc.Insecure {
@@ -92,6 +104,8 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 
 		res_body, err := io.ReadAll(res.Body)
 		res.Body.Close()
+		hc.dec()
+
 		if (hc.TotalApiCall % 10 == 0 ) {
 			fmt.Printf("Host %s: completed %d Api Call\n", hc.Hostname, hc.TotalApiCall)
 		}
@@ -117,7 +131,6 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 		httpCode = res.StatusCode
 		responseBody = string(res_body)
 	}
-	hc.dec()
 	if hc.Debug {
 		fmt.Printf("%s: queue %d action %s\n", hc.Hostname, hc.QueueLength, action)
 	}
