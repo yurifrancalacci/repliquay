@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceRoot}",
-            "args": ["--quaysfile=/Users/yfrancal/Code/repliquay/quays.yaml", "--repo=/Users/yfrancal/Code/repliquay/devops.yaml", "--skipVerify=true", "--debug=true", "--sleep=200", "--retries=20", "--repo=/Users/yfrancal/Code/repliquay/d2.yaml", "--clone=true"]
+            "args": ["--quaysfile=/Users/yfrancal/Code/repliquay/quays.yaml", "--skipVerify=true", "--sleep=100", "--retries=20", "--clone=true"]
         }
         
 
