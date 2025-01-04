@@ -126,12 +126,13 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 				"POST",
 				token,
 				`{"repository":"`+v.Name+`","visibility":"private","namespace":"`+orgName+`","description":"repository description"}`,
-				"create repository "+v.Name,
+				"create repository "+v.Name+" in org "+orgName,
 				&retryCounter,
 			)
 		}()
 	}
 	wg.Wait()
+	fmt.Println("Create "+orgName+" repos completed")
 	status = true
 	return
 }
@@ -145,6 +146,10 @@ func createRepoPermission(quayHost string, permList []PermStruct, token string, 
 	}
 
 	for _, v := range permList {
+		for hostConn.QueueLength >= hostConn.Max_connections {
+			time.Sleep(time.Duration(hostConn.SleepPeriod) * time.Millisecond)
+			fmt.Println("throttling connections")
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -155,7 +160,7 @@ func createRepoPermission(quayHost string, permList []PermStruct, token string, 
 					"PUT",
 					token,
 					`{"role":"`+v.Role+`"}`,
-					"create repo permission for robot "+v.Name+" and role "+v.Role,
+					"repo "+v.RepoName+" in org "+v.Organization+" create repo permission for robot "+v.Name+" and role "+v.Role,
 					&retryCounter,
 				)
 			} else {
@@ -165,13 +170,14 @@ func createRepoPermission(quayHost string, permList []PermStruct, token string, 
 					"PUT",
 					token,
 					`{"role":"`+v.Role+`"}`,
-					"create repo "+v.Name+" permission for teams "+v.Name+" and role "+v.Role,
+					"repo "+v.RepoName+" in org "+v.Organization+" create repo "+v.Name+" permission for teams "+v.Name+" and role "+v.Role,
 					&retryCounter,
 				)
 			}
 		}()
 	}
 	wg.Wait()
+	fmt.Println("Create permissions completed")
 	status = true
 	return
 }
@@ -216,9 +222,12 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+v.Name, "PUT", token, `{"description":"`+v.Description+`"}`, "create robot "+v.Name, &retryCounter)
+			hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/robots/"+v.Name, "PUT", token, `{"description":"`+v.Description+`"}`, "create robot "+v.Name+" org "+orgName, &retryCounter)
 		}()
 	}
+	// wait for robot completion
+	wg.Wait()
+
 	// teams
 	if debug {
 		fmt.Println("creating ", len(teamList), "teams")
@@ -230,13 +239,14 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+v.Name, "PUT", token, `{"role":"`+v.Role+`"}`, "create team "+v.Name, &retryCounter)
+			hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+v.Name, "PUT", token, `{"role":"`+v.Role+`"}`, "create team "+v.Name+" org "+orgName, &retryCounter)
 			if ldapSync {
 				hostConn.ApiCall(quayHost, "/api/v1/organization/"+orgName+"/team/"+v.Name+"/syncing", "POST", token, `{"group_dn":"`+v.GroupDN+`"}`, "create team sync "+v.Name, &retryCounter)
 			}
 		}()
 	}
 	wg.Wait()
+	fmt.Println("Create robots completed")
 	status = true
 	return
 }
@@ -375,8 +385,6 @@ func main() {
 			}
 			parsedOrg = append(parsedOrg, Organization{Name: k, OrgRoleName: k, RobotList: robotList, TeamsList: teamList, RepoList: repoList})
 		}
-
-		// os.Exit(0)
 	}
 
 	fmt.Printf("Repliquay: repliquayting... be patient\n")
@@ -405,7 +413,7 @@ func main() {
 
 	for _, v := range quays.HostToken {
 		fmt.Println("len parsedOrg", len(parsedOrg))
-		for i, o := range parsedOrg {
+		for _, o := range parsedOrg {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -415,11 +423,21 @@ func main() {
 				createRobotTeam(v.Host, o.Name, o.RobotList, o.TeamsList, v.Token, hostConn[v.Host])
 				fmt.Printf("creating repositories for organization %s - Host: %s\n", o.Name, v.Host)
 				createRepo(v.Host, o.Name, o.RepoList, v.Token, hostConn[v.Host])
+			}()
+		}
+	}
+	wg.Wait()
+	for _, v := range quays.HostToken {
+		fmt.Println("len parsedOrg", len(parsedOrg))
+		for i, o := range parsedOrg {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				if i == 0 {
 					fmt.Printf("creating permissions for repositories in organization %s - Host: %s\n", o.Name, v.Host)
 					createRepoPermission(v.Host, permList, v.Token, hostConn[v.Host])
 				}
-			}()
+				}()
 		}
 	}
 	wg.Wait()
