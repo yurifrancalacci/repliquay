@@ -194,7 +194,7 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 func getQuayOrg(quay string, token string, orgName string, hostStatus *apicall.HostConnection) (team_list []teamStruct) {
 	var quay_org QuayOrgApiResponse
 	fmt.Println("getQuayOrg------: /api/v1/organization/" + orgName)
-	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/organization/"+orgName, "GET", token, "", "get organizations details", &hostStatus.Retries)
+	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/organization/"+orgName, "GET", token, "", "get "+orgName+" organization details", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "org", orgName, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_org)
 	for _, v := range quay_org.Ordered_teams {
@@ -208,7 +208,7 @@ func getQuayOrg(quay string, token string, orgName string, hostStatus *apicall.H
 func getQuayOrgRobots(quay string, token string, orgName string, hostStatus *apicall.HostConnection) (robots_list []robotStruct) {
 	var quay_org_robots QuayRobotsApi
 	// /api/v1/organization/organization2/robots?permissions=true&token=false
-	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/organization/"+orgName+"/robots?permission=true&token=false", "GET", token, "", "get organizations robots", &hostStatus.Retries)
+	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/organization/"+orgName+"/robots?permission=true&token=false", "GET", token, "", "get "+orgName+" organization robots", &hostStatus.Retries)
 	json.Unmarshal([]byte(apiResponse), &quay_org_robots)
 	if len(quay_org_robots.Robots) > 0 {
 		for _, v := range quay_org_robots.Robots {
@@ -237,7 +237,7 @@ func getQuayRepos(quay string, token string, orgName string, hostStatus *apicall
 
 
 	fmt.Println("getQuayRepos------: /api/v1/repository?public=true&namespace=" + orgName)
-	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository?public=true&namespace="+orgName, "GET", token, "", "get organizations repositories", &hostStatus.Retries)
+	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository?public=true&namespace="+orgName, "GET", token, "", "get "+orgName+" organization repositories", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_repos)
 	// fmt.Println("repositories parsed len", len(quay_repos.Repositories), "repo[0] name ", quay_repos.Repositories[0].Name, "quay_repos array", quay_repos.Repositories, "apiResponse", apiResponse)
@@ -257,14 +257,14 @@ func getQuayRepoPerms(quay string, token string, orgName string, repo_name strin
 	// repo_perms repo_name#kind{team/robot}#name#role
 	var quay_repo_perms QuayRepoPerms
 	fmt.Println("getQuayRepoPerms------: /api/v1/repository/" + orgName + "/" + repo_name + "/permissions/team/")
-	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository/"+orgName+"/"+repo_name+"/permissions/team/", "GET", token, "", "get organizations repository team permission", &hostStatus.Retries)
+	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository/"+orgName+"/"+repo_name+"/permissions/team/", "GET", token, "", "get "+orgName+" organization repository "+repo_name+" team permission", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_repo_perms)
 	// fmt.Println("repository permission parsed len", len(quay_repo_perms.Permissions), "apiResponse", apiResponse)
 	for _, v := range quay_repo_perms.Permissions {
 		repo_perms = append(repo_perms, "team#"+v.Name+"#"+v.Role)
 	}
-	_, apiResponse = hostStatus.ApiCall(quay, "/api/v1/repository/"+orgName+"/"+repo_name+"/permissions/user/", "GET", token, "", "get organizations repository user permission", &hostStatus.Retries)
+	_, apiResponse = hostStatus.ApiCall(quay, "/api/v1/repository/"+orgName+"/"+repo_name+"/permissions/user/", "GET", token, "", "get "+orgName+" organization repository "+repo_name+" user permission", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_repo_perms)
 	// fmt.Println("repository permission parsed len", len(quay_repo_perms.Permissions), "apiResponse", apiResponse)
