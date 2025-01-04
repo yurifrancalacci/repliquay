@@ -132,7 +132,7 @@ func createRepo(quayHost string, orgName string, repoConfig []RepoStruct, token 
 		}()
 	}
 	wg.Wait()
-	fmt.Println("Create "+orgName+" repos completed")
+	fmt.Println("Create " + orgName + " repos completed")
 	status = true
 	return
 }
@@ -251,21 +251,25 @@ func createRobotTeam(quayHost string, orgName string, robotList []RobotStruct, t
 	return
 }
 
-func parseIniFile(inifile string, quay string, repolist []string, sleep int, insec bool, ldap bool, dry bool, _clone bool) (quaysfile string, repo []string, sleepPeriod int, insecure bool, ldapSync bool, dryRun bool, clone bool) {
+func parseIniFile(inifile string, quaysfile string, repo []string, sleepPeriod int, insecure bool, ldapSync bool, dryRun bool, skipVerify bool, retries int, clone bool, debug bool) (_quaysfile string, _repo []string, _sleepPeriod int, _insecure bool, _ldapSync bool, _dryRun bool, _skipVerify bool, _retries int, _clone bool, _debug bool) {
 	inidata, err := ini.Load(inifile)
 
 	if err != nil {
-		log.Print("Warning: no conf option found, loading default values from /repos/repliquay.conf")
-		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, clone = quay, repolist, sleep, insec, ldap, dry, _clone
+		log.Print("Warning: no conf option found, loading default values")
+		_quaysfile, _repo, _sleepPeriod, _retries, _debug, _insecure, _ldapSync, _dryRun, _skipVerify, _clone = quaysfile, repo, sleepPeriod, retries, debug, insecure, ldapSync, dryRun, skipVerify, clone
 		return
 	}
-	quaysfile = inidata.Section("quays").Key("file").String()
-	repo = inidata.Section("repos").Key("files").Strings(",")
-	sleepPeriod, _ = inidata.Section("params").Key("sleep").Int()
-	debug, _ = inidata.Section("params").Key("debug").Bool()
-	ldapSync, _ = inidata.Section("params").Key("ldapsync").Bool()
-	dryRun, _ = inidata.Section("params").Key("dryrun").Bool()
-	clone, _ = inidata.Section("params").Key("clone").Bool()
+
+	_quaysfile = inidata.Section("quays").Key("file").String()
+	_repo = inidata.Section("repos").Key("files").Strings(",")
+	_sleepPeriod, _ = inidata.Section("params").Key("sleep").Int()
+	_retries, _ = inidata.Section("params").Key("retries").Int()
+	_debug, _ = inidata.Section("params").Key("debug").Bool()
+	_ldapSync, _ = inidata.Section("params").Key("ldapsync").Bool()
+	_dryRun, _ = inidata.Section("params").Key("dryrun").Bool()
+	_skipVerify, _ = inidata.Section("params").Key("skipVerify").Bool()
+	_insecure, _ = inidata.Section("params").Key("insecure").Bool()
+	_clone, _ = inidata.Section("params").Key("clone").Bool()
 	return
 }
 
@@ -308,7 +312,7 @@ func main() {
 	p, _ := os.Executable()
 	_, err := os.Stat(p + "/" + confFile)
 	if err != nil {
-		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, clone = parseIniFile(confFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, clone)
+		quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, skipVerify, retries, clone, debug = parseIniFile(confFile, quaysfile, repo, sleepPeriod, insecure, ldapSync, dryRun, skipVerify, retries, clone, debug)
 	} else {
 		fmt.Println("No config file provided ")
 	}
@@ -437,7 +441,7 @@ func main() {
 					fmt.Printf("creating permissions for repositories in organization %s - Host: %s\n", o.Name, v.Host)
 					createRepoPermission(v.Host, permList, v.Token, hostConn[v.Host])
 				}
-				}()
+			}()
 		}
 	}
 	wg.Wait()

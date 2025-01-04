@@ -170,7 +170,7 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 				defer wg.Done()
 				org_repos[v.Name], repo_perms[v.Name] = getQuayRepos(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
 			}()
-				// if qc.Debug {
+			if qc.Debug {
 				for _, k := range org_teams[v.Name] {
 					fmt.Printf("org %s team %s\n", v.Name, k)
 				}
@@ -183,7 +183,7 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 				for _, k := range repo_perms[v.Name] {
 					fmt.Printf("org %s perm %s\n", v.Name, k)
 				}
-				// }
+			}
 
 			wg.Wait()
 		}
@@ -234,7 +234,6 @@ func getQuayRepos(quay string, token string, orgName string, hostStatus *apicall
 	var quay_repos QuayRepositories
 	org_repo_perms = make(map[string][]string)
 	var wg sync.WaitGroup
-
 
 	fmt.Println("getQuayRepos------: /api/v1/repository?public=true&namespace=" + orgName)
 	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository?public=true&namespace="+orgName, "GET", token, "", "get "+orgName+" organization repositories", &hostStatus.Retries)

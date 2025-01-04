@@ -17,8 +17,8 @@ type HostConnection struct {
 	SleepPeriod, Retries                int
 	Max_connections                     int
 	QueueLength                         int
-	TotalApiCall						int
-	LastCompletedApiCallTs				int64
+	TotalApiCall                        int
+	LastCompletedApiCallTs              int64
 	Mx                                  sync.Mutex
 }
 
@@ -66,7 +66,7 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 			fmt.Printf("%s: APICALL %s action too many connections %d. Sleeping %s\n", host, action, hc.QueueLength, time.Duration(hc.SleepPeriod)*time.Millisecond)
 		}
 		time.Sleep(time.Duration(hc.SleepPeriod) * time.Millisecond)
-		if ((hc.LastCompletedApiCallTs - time.Now().Unix()) > 30 ) {
+		if (hc.LastCompletedApiCallTs - time.Now().Unix()) > 30 {
 			fmt.Printf("%s: ----> APICALL last apicall at %d. Resetting counter to avoid stuck\n", host, hc.LastCompletedApiCallTs)
 			hc.resetConnectionCounter()
 		}
@@ -76,7 +76,7 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 		if hc.Debug {
 			fmt.Printf("%s: queue %d/%d action %s\n", hc.Hostname, hc.QueueLength, hc.Max_connections, action)
 		}
-	
+
 		client := &http.Client{Transport: tr}
 		req := &http.Request{}
 		if !hc.Insecure {
@@ -106,7 +106,7 @@ func (hc *HostConnection) ApiCall(host string, url string, method string, token 
 		res.Body.Close()
 		hc.dec()
 
-		if (hc.TotalApiCall % 10 == 0 ) {
+		if hc.TotalApiCall%10 == 0 {
 			fmt.Printf("Host %s: completed %d Api Call\n", hc.Hostname, hc.TotalApiCall)
 		}
 
