@@ -262,8 +262,14 @@ func parseIniFile(inifile string, quaysfile string, repo []string, sleepPeriod i
 
 	_quaysfile = inidata.Section("quays").Key("file").String()
 	_repo = inidata.Section("repos").Key("files").Strings(",")
-	_sleepPeriod, _ = inidata.Section("params").Key("sleep").Int()
-	_retries, _ = inidata.Section("params").Key("retries").Int()
+	_sleepPeriod, err = inidata.Section("params").Key("sleep").Int()
+	if err != nil {
+		_sleepPeriod = sleepPeriod
+	}
+	_retries, err = inidata.Section("params").Key("retries").Int()
+	if err != nil {
+		_retries = retries
+	}
 	_debug, _ = inidata.Section("params").Key("debug").Bool()
 	_ldapSync, _ = inidata.Section("params").Key("ldapsync").Bool()
 	_dryRun, _ = inidata.Section("params").Key("dryrun").Bool()
@@ -346,8 +352,7 @@ func main() {
 				orgList = append(orgList, org.Name)
 			}
 		}
-	}
-	if clone {
+	} else {
 		var qc quayconfig.QuayConfig
 		parsedOrg = nil
 		orgList = nil
