@@ -157,7 +157,6 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
 				org_teams[v.Name] = getQuayOrg(quay, token, quay_orgs.Organizations[i].Name, &hostConn)
 			}()
 			wg.Add(1)
@@ -184,7 +183,6 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 					fmt.Printf("org %s perm %s\n", v.Name, k)
 				}
 			}
-
 			wg.Wait()
 		}
 	}
@@ -193,10 +191,11 @@ func (qc *QuayConfig) GetConfFromQuay(quay string, token string, max_conn int) (
 
 func getQuayOrg(quay string, token string, orgName string, hostStatus *apicall.HostConnection) (team_list []teamStruct) {
 	var quay_org QuayOrgApiResponse
-	fmt.Println("getQuayOrg------: /api/v1/organization/" + orgName)
+	fmt.Printf("Get Quay organization %s\n", orgName)
 	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/organization/"+orgName, "GET", token, "", "get "+orgName+" organization details", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "org", orgName, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_org)
+	fmt.Printf("Get Quay organization %s...\tDone\n", orgName)
 	for _, v := range quay_org.Ordered_teams {
 		if !quay_org.Teams[v].Is_synced {
 			team_list = append(team_list, teamStruct{Name: quay_org.Teams[v].Name, Description: quay_org.Teams[v].Description, Role: quay_org.Teams[v].Role})
@@ -235,11 +234,12 @@ func getQuayRepos(quay string, token string, orgName string, hostStatus *apicall
 	org_repo_perms = make(map[string][]string)
 	var wg sync.WaitGroup
 
-	fmt.Println("getQuayRepos------: /api/v1/repository?public=true&namespace=" + orgName)
+	fmt.Printf("Get Quay repositories for org %s\n", orgName)
 	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository?public=true&namespace="+orgName, "GET", token, "", "get "+orgName+" organization repositories", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_repos)
-	// fmt.Println("repositories parsed len", len(quay_repos.Repositories), "repo[0] name ", quay_repos.Repositories[0].Name, "quay_repos array", quay_repos.Repositories, "apiResponse", apiResponse)
+	fmt.Printf("Get Quay repositories for org %s...\tDone\n", orgName)
+
 	for _, v := range quay_repos.Repositories {
 		org_repos = append(org_repos, v.Name)
 		wg.Add(1)
@@ -255,17 +255,20 @@ func getQuayRepos(quay string, token string, orgName string, hostStatus *apicall
 func getQuayRepoPerms(quay string, token string, orgName string, repo_name string, hostStatus *apicall.HostConnection) (repo_perms []string) {
 	// repo_perms repo_name#kind{team/robot}#name#role
 	var quay_repo_perms QuayRepoPerms
-	fmt.Println("getQuayRepoPerms------: /api/v1/repository/" + orgName + "/" + repo_name + "/permissions/team/")
+	fmt.Printf("Get Quay %s/%s repository team permissions\n", orgName, repo_name)
 	_, apiResponse := hostStatus.ApiCall(quay, "/api/v1/repository/"+orgName+"/"+repo_name+"/permissions/team/", "GET", token, "", "get "+orgName+" organization repository "+repo_name+" team permission", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_repo_perms)
+	fmt.Printf("Get Quay %s/%s repository team permissions...\tDone\n", orgName, repo_name)
 	// fmt.Println("repository permission parsed len", len(quay_repo_perms.Permissions), "apiResponse", apiResponse)
 	for _, v := range quay_repo_perms.Permissions {
 		repo_perms = append(repo_perms, "team#"+v.Name+"#"+v.Role)
 	}
+	fmt.Printf("Get Quay %s/%s repository user permissions\n", orgName, repo_name)
 	_, apiResponse = hostStatus.ApiCall(quay, "/api/v1/repository/"+orgName+"/"+repo_name+"/permissions/user/", "GET", token, "", "get "+orgName+" organization repository "+repo_name+" user permission", &hostStatus.Retries)
 	// fmt.Println("httpcode", httpCode, "apiResponse", apiResponse)
 	json.Unmarshal([]byte(apiResponse), &quay_repo_perms)
+	fmt.Printf("Get Quay %s/%s repository user permissions...\tDone\n", orgName, repo_name)
 	// fmt.Println("repository permission parsed len", len(quay_repo_perms.Permissions), "apiResponse", apiResponse)
 	for _, v := range quay_repo_perms.Permissions {
 		if v.Is_robot {
@@ -273,6 +276,5 @@ func getQuayRepoPerms(quay string, token string, orgName string, repo_name strin
 			repo_perms = append(repo_perms, "robot#"+rb[1]+"#"+v.Role)
 		}
 	}
-
 	return
 }

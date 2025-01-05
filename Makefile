@@ -1,12 +1,16 @@
 VERSION = 0.1.2-beta
 
-.PHONY: clean build push
+.PHONY: image clean build push
 
 push: build
 	podman manifest push quay.io/barneygumble78/repliquay:$(VERSION)
 
-build: clean
+image: clean
 	podman build --platform linux/amd64,linux/arm64 --manifest quay.io/barneygumble78/repliquay:$(VERSION) .
 
 clean:
 	-podman manifest rm quay.io/barneygumble78/repliquay:$(VERSION)
+	-rm repliquay
+
+build:
+	go build -o repliquay
