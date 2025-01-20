@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Repliquay** is a tool written in go used to configure organizations, repositories, permissions, robots etc. etc... of one or more Quay Enterprise instances. These configurations are written in one or more YAML formatted files.
+**Repliquay** is a tool written in go used to configure organizations, repositories, permissions, robots etc. etc... on one or more Quay Enterprise instances. These configurations are written in one or more YAML formatted files.
 
 It uses standard Quay APIs to configure the instance. APIs are accessed via preconfigured OAuth token defined in specific configuration file.
 
