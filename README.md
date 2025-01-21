@@ -52,6 +52,13 @@ Options:
 - ``sleep`` milliseconds to wait before trying an HTTP call when Quay instance is handling more connection than max value specified on the configuration file
 
 
+## TO-DOs
+
+This utility should be rewritten applying the pattern "_Do not communicate by sharing memory; instead, share memory by communicating_".
+Sooner or later this will be done, but for the moment that's it. It is far to be a "production ready" tool, but it seems doing its job as expected.
+- Data type should be reviewed and made more efficient, but more than that should be removed all the redundant data types.
+- Enhance clone function to get synced groups LDAP DN and apply to cloned Quays.
+
 ## Create Oauth API token
 
 To create an OAuth access token so you can access the API for your organization:
