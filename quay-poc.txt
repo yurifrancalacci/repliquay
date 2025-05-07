@@ -1,0 +1,40 @@
+[ec2-user@quay ~]$ sudo podman login registry.redhat.io
+Username: <username>
+Password:
+Login Succeeded!
+[ec2-user@quay ~]$ sudo podman network create test
+test
+[ec2-user@quay ~]$ sudo mkdir -p /var/lib/pgsql/postgres-quay
+[ec2-user@quay ~]$ QUAY=/var/lib/pgsql/
+[ec2-user@quay ~]$ sudo setfacl -m u:26:-wx $QUAY/postgres-quay
+[ec2-user@quay ~]$  sudo podman run -d --name postgresql-quay --net test\
+   -e POSTGRESQL_USER=quayuser \
+   -e POSTGRESQL_PASSWORD=quaypass \
+   -e POSTGRESQL_DATABASE=quay \
+   -e POSTGRESQL_ADMIN_PASSWORD=adminpass \
+   -p 5432:5432 \
+   -v $QUAY/postgres-quay:/var/lib/pgsql/data:Z \
+   registry.redhat.io/rhel8/postgresql-10:1
+[ec2-user@quay ~]$ sudo podman exec -it postgresql-quay /bin/bash -c 'echo "CREATE EXTENSION IF NOT EXISTS pg_trgm" | psql -d quay -U postgres'
+CREATE EXTENSION
+[ec2-user@quay ~]$ sudo podman run -d --name redis --net test\
+   -p 6379:6379 \
+   -e REDIS_PASSWORD=strongpassword \
+   registry.redhat.io/rhel8/redis-5:1
+[ec2-user@quay ~]$ sudo podman run --rm -it --name quay_config --net test -p 80:8080 -p 443:8443 registry.redhat.io/quay/quay-rhel8:v3.7.8 config secret
+
+[ec2-user@quay ~]$ cp quay-config.tar.gz /tmp/
+[ec2-user@quay ~]$ sudo mkdir $QUAY/config
+[ec2-user@quay ~]$ cd $QUAY/config
+[ec2-user@quay config]$ sudo cp /tmp/quay-config.tar.gz .
+[ec2-user@quay config]$ sudo tar xvf quay-config.tar.gz
+extra_ca_certs/
+config.yaml
+[ec2-user@quay config]$ sudo rm -f quay-config.tar.gz
+[ec2-user@quay config]$ sudo mkdir $QUAY/storage
+[ec2-user@quay config]$ sudo setfacl -m u:1001:-wx $QUAY/storage
+[ec2-user@quay config]$ sudo podman run -d --stop-timeout=30 -p 80:8080 -p 443:8443  \
+>    --name=quay --net test\
+>    -v $QUAY/config:/conf/stack:Z \
+>    -v $QUAY/storage:/datastorage:Z \
+>    registry.redhat.io/quay/quay-rhel8:v3.7.8

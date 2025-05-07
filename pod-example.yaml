@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: repliquay
+  labels:
+    app: repliquay
+  namespace: repliquay
+spec:
+  restartPolicy: OnFailure
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: repliquay
+      image: 'quay.io/barneygumble78/repliquay:0.1.2-beta'
+      imagePullPolicy: Always
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+      volumeMounts:
+        - name: repliquay
+          mountPath: "/repos"
+      resources:
+        limits:
+          cpu: 100m
+          memory: "512Mi"
+        requests:
+          cpu: 100m
+          memory: "256Mi"
+  volumes:
+    - name: repliquay
+      projected:
+        sources:
+        - configMap:
+            name: d2
+            items:
+              - key: d2.yaml
+                path: d2.yaml
+        - configMap:
+            name: devops
+            items:
+              - key: devops.yaml
+                path: devops.yaml
+        - secret:
+            name: quays
+            items:
+              - key: quays.yaml
+                path: quays.yaml
+        - configMap:
+            name: repliquay-conf
+            items:
+              - key: repliquay.conf
+                path: repliquay.conf
