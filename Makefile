@@ -1,8 +1,8 @@
-VERSION = 0.1.2-beta
+VERSION = 0.1.2
 
 .PHONY: image clean build push
 
-push: build
+push: image
 	podman manifest push quay.io/barneygumble78/repliquay:$(VERSION)
 
 image: clean
